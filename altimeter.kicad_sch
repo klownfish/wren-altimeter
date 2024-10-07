@@ -567,198 +567,6 @@
 				)
 			)
 		)
-		(symbol "Connector:Conn_ARM_SWD_TagConnect_TC2030-NL"
-			(exclude_from_sim no)
-			(in_bom no)
-			(on_board yes)
-			(property "Reference" "J"
-				(at 2.54 11.43 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "Conn_ARM_SWD_TagConnect_TC2030-NL"
-				(at 2.54 8.89 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "Connector:Tag-Connect_TC2030-IDC-NL_2x03_P1.27mm_Vertical"
-				(at 0 -17.78 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "https://www.tag-connect.com/wp-content/uploads/bsk-pdf-manager/TC2030-CTX_1.pdf"
-				(at 0 -15.24 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Tag-Connect ARM Cortex SWD JTAG connector, 6 pin, no legs"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "Cortex Debug Connector ARM SWD JTAG"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "*TC2030*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "Conn_ARM_SWD_TagConnect_TC2030-NL_0_0"
-				(pin power_in line
-					(at -2.54 10.16 270)
-					(length 2.54)
-					(name "VCC"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 7.62 -2.54 180)
-					(length 2.54)
-					(name "SWDIO"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(alternate "TMS" bidirectional line)
-				)
-				(pin open_collector line
-					(at 7.62 5.08 180)
-					(length 2.54)
-					(name "~{RESET}"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at 7.62 0 180)
-					(length 2.54)
-					(name "SWCLK"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(alternate "TCK" output line)
-				)
-				(pin power_in line
-					(at -2.54 -10.16 90)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "5"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 7.62 -5.08 180)
-					(length 2.54)
-					(name "SWO"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "6"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(alternate "TDO" input line)
-				)
-			)
-			(symbol "Conn_ARM_SWD_TagConnect_TC2030-NL_0_1"
-				(rectangle
-					(start -5.08 7.62)
-					(end 5.08 -7.62)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-		)
 		(symbol "Connector:USB_C_Receptacle_USB2.0_16P"
 			(pin_names
 				(offset 1.016)
@@ -1440,6 +1248,271 @@
 						)
 					)
 					(number "S1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
+		(symbol "Connector_Generic_MountingPin:Conn_01x05_MountingPin"
+			(pin_names
+				(offset 1.016) hide)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "J"
+				(at 0 7.62 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Conn_01x05_MountingPin"
+				(at 1.27 -7.62 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Generic connectable mounting pin connector, single row, 01x05, script generated (kicad-library-utils/schlib/autogen/connector/)"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "connector"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Connector*:*_1x??-1MP*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "Conn_01x05_MountingPin_1_1"
+				(rectangle
+					(start -1.27 -4.953)
+					(end 0 -5.207)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 -2.413)
+					(end 0 -2.667)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 0.127)
+					(end 0 -0.127)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 2.667)
+					(end 0 2.413)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 5.207)
+					(end 0 4.953)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 6.35)
+					(end 1.27 -6.35)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.016 -7.112) (xy 1.016 -7.112)
+					)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(text "Mounting"
+					(at 0 -6.731 0)
+					(effects
+						(font
+							(size 0.381 0.381)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 5.08 0)
+					(length 3.81)
+					(name "Pin_1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 2.54 0)
+					(length 3.81)
+					(name "Pin_2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 0 0)
+					(length 3.81)
+					(name "Pin_3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 -2.54 0)
+					(length 3.81)
+					(name "Pin_4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 -5.08 0)
+					(length 3.81)
+					(name "Pin_5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -10.16 90)
+					(length 3.048)
+					(name "MountPin"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "MP"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -4413,10 +4486,6 @@
 		(uuid "8783af63-2916-4ddd-b242-c63d7865222c")
 	)
 	(no_connect
-		(at 53.34 168.91)
-		(uuid "92774b03-ec90-453c-a600-e127051a91c1")
-	)
-	(no_connect
 		(at 281.94 68.58)
 		(uuid "acacf044-dfec-47bc-838c-353b702daa5a")
 	)
@@ -4444,7 +4513,7 @@
 	)
 	(wire
 		(pts
-			(xy 54.61 151.13) (xy 54.61 153.67)
+			(xy 59.69 153.67) (xy 59.69 157.48)
 		)
 		(stroke
 			(width 0)
@@ -4894,7 +4963,7 @@
 	)
 	(wire
 		(pts
-			(xy 43.18 173.99) (xy 43.18 175.26)
+			(xy 59.69 167.64) (xy 59.69 170.18)
 		)
 		(stroke
 			(width 0)
@@ -5044,7 +5113,7 @@
 	)
 	(wire
 		(pts
-			(xy 53.34 158.75) (xy 64.77 158.75)
+			(xy 50.8 160.02) (xy 62.23 160.02)
 		)
 		(stroke
 			(width 0)
@@ -5284,7 +5353,7 @@
 	)
 	(wire
 		(pts
-			(xy 53.34 166.37) (xy 64.77 166.37)
+			(xy 50.8 162.56) (xy 62.23 162.56)
 		)
 		(stroke
 			(width 0)
@@ -5824,6 +5893,16 @@
 	)
 	(wire
 		(pts
+			(xy 45.72 172.72) (xy 45.72 173.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c54c3a24-09f7-4418-b2f8-9eee78af8a7b")
+	)
+	(wire
+		(pts
 			(xy 50.8 31.75) (xy 63.5 31.75)
 		)
 		(stroke
@@ -5874,7 +5953,7 @@
 	)
 	(wire
 		(pts
-			(xy 43.18 153.67) (xy 54.61 153.67)
+			(xy 50.8 157.48) (xy 59.69 157.48)
 		)
 		(stroke
 			(width 0)
@@ -5894,7 +5973,7 @@
 	)
 	(wire
 		(pts
-			(xy 53.34 163.83) (xy 64.77 163.83)
+			(xy 50.8 165.1) (xy 62.23 165.1)
 		)
 		(stroke
 			(width 0)
@@ -6101,6 +6180,16 @@
 			(type default)
 		)
 		(uuid "e15297f9-51cd-478c-a6dc-4a0bfb51e641")
+	)
+	(wire
+		(pts
+			(xy 50.8 167.64) (xy 59.69 167.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e3764b43-c82e-4ebc-a1c4-d32222964811")
 	)
 	(wire
 		(pts
@@ -6604,7 +6693,7 @@
 		(uuid "2000cac0-f061-4a33-a3f5-8f7c7bc4140c")
 	)
 	(label "SWCLK"
-		(at 64.77 163.83 180)
+		(at 62.23 165.1 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -6648,7 +6737,7 @@
 		(uuid "2ce01d50-5375-447e-aed3-97c492ba96d7")
 	)
 	(label "SWDIO"
-		(at 64.77 166.37 180)
+		(at 62.23 162.56 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -6857,7 +6946,7 @@
 		(uuid "ae9234a1-7cff-442e-b679-f274962bd5c5")
 	)
 	(label "NRST"
-		(at 64.77 158.75 180)
+		(at 62.23 160.02 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -6990,7 +7079,7 @@
 	)
 	(global_label "NRF_VDD"
 		(shape input)
-		(at 54.61 151.13 0)
+		(at 59.69 153.67 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -7000,7 +7089,7 @@
 		)
 		(uuid "47b56833-0a1a-4889-9162-4b4f19c7f52c")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 65.8805 151.13 0)
+			(at 70.9605 153.67 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7307,6 +7396,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C23733"
+			(at 157.48 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "55e71b10-209c-40b6-8018-cb620fea1638")
 		)
@@ -7574,6 +7672,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C52923"
+			(at 262.89 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "32b4d02d-fd85-4a82-8b66-19825bd76de7")
 		)
@@ -7608,7 +7715,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "5.1k"
+		(property "Value" "51k"
 			(at 38.1 62.2299 0)
 			(effects
 				(font
@@ -7636,6 +7743,15 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 35.56 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C25794"
 			(at 35.56 60.96 0)
 			(effects
 				(font
@@ -7744,7 +7860,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "30k"
+		(property "Value" "100k"
 			(at 38.1 54.6099 0)
 			(effects
 				(font
@@ -7772,6 +7888,15 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 35.56 53.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C25741"
 			(at 35.56 53.34 0)
 			(effects
 				(font
@@ -7849,6 +7974,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C1525"
+			(at 350.52 30.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "7550a0b5-fad3-4a88-b533-458cca7fa2ec")
 		)
@@ -7866,7 +8000,7 @@
 	)
 	(symbol
 		(lib_id "power:Earth")
-		(at 43.18 175.26 0)
+		(at 59.69 170.18 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -7874,7 +8008,7 @@
 		(dnp no)
 		(uuid "164e7d5a-bef0-4cce-ad9a-9b18033c96d4")
 		(property "Reference" "#PWR036"
-			(at 43.18 181.61 0)
+			(at 59.69 176.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7883,7 +8017,7 @@
 			)
 		)
 		(property "Value" "Earth"
-			(at 38.1 176.53 0)
+			(at 59.69 173.482 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7891,7 +8025,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 43.18 175.26 0)
+			(at 59.69 170.18 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7900,7 +8034,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 43.18 175.26 0)
+			(at 59.69 170.18 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7909,7 +8043,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"Earth\""
-			(at 43.18 175.26 0)
+			(at 59.69 170.18 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7937,18 +8071,17 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "2201623a-218b-48ff-8363-63155e2f5e27")
 		(property "Reference" "Y1"
-			(at 264.16 109.3468 90)
+			(at 244.602 106.934 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "Crystal_GND24"
-			(at 264.16 111.8868 90)
+		(property "Value" "32MHz"
+			(at 244.602 109.474 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7974,6 +8107,15 @@
 			)
 		)
 		(property "Description" "Four pin crystal, GND on pins 2 and 4"
+			(at 250.19 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C5830663"
 			(at 250.19 114.3 0)
 			(effects
 				(font
@@ -8125,6 +8267,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C25905"
+			(at 87.63 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "cba17654-3764-4452-a176-dbbc05cf11e4")
 		)
@@ -8187,6 +8338,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 210.82 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C1525"
 			(at 210.82 92.71 0)
 			(effects
 				(font
@@ -8536,6 +8696,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C779278"
+			(at 181.61 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "8"
 			(uuid "a465f0d7-13f9-4afa-8237-e6cac1caf01e")
 		)
@@ -8696,6 +8865,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C25905"
+			(at 92.71 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "4ad2a5cc-4257-4736-918a-4db766a57a17")
 		)
@@ -8796,7 +8974,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "30k"
+		(property "Value" "51k"
 			(at 171.45 167.6399 0)
 			(effects
 				(font
@@ -8824,6 +9002,15 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
+			(at 168.91 166.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C25794"
 			(at 168.91 166.37 0)
 			(effects
 				(font
@@ -8902,6 +9089,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C1525"
+			(at 172.72 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "89c51b90-fa20-49f2-af91-158508192399")
 		)
@@ -8971,6 +9167,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C23733"
+			(at 393.7 33.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "2d97ac27-ffbb-43bd-9fd0-d6eea6d5582d")
 		)
@@ -9032,6 +9237,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 271.78 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C1525"
 			(at 271.78 46.99 0)
 			(effects
 				(font
@@ -9175,6 +9389,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C23733"
+			(at 243.84 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "471ddb1e-ff4c-4559-9372-52e453cadec8")
 		)
@@ -9244,6 +9467,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C1525"
+			(at 279.4 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "ae863f1b-71d3-4c64-adf8-e47d18dd3b50")
 		)
@@ -9278,7 +9510,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "MCP73832"
+		(property "Value" "MCP73832T-2"
 			(at 186.3441 149.86 0)
 			(effects
 				(font
@@ -9308,6 +9540,15 @@
 			)
 		)
 		(property "Description" "Single cell, Li-Ion/Li-Po charge management controller, 4.20V, Open-Drain Status Output, in SOT23-5 package"
+			(at 184.15 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C38066"
 			(at 184.15 157.48 0)
 			(effects
 				(font
@@ -9605,6 +9846,96 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector_Generic_MountingPin:Conn_01x05_MountingPin")
+		(at 45.72 162.56 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp yes)
+		(fields_autoplaced yes)
+		(uuid "4fe3bfb5-cc01-412c-b1ac-d6f21dc56c01")
+		(property "Reference" "J2"
+			(at 45.72 151.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x05_MountingPin"
+			(at 45.72 153.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Connector_JST:JST_SH_BM05B-SRSS-TB_1x05-1MP_P1.00mm_Vertical"
+			(at 45.72 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 45.72 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connectable mounting pin connector, single row, 01x05, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 45.72 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" ""
+			(at 45.72 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "189d4495-7d4e-45c5-b762-42c40d13bc1b")
+		)
+		(pin "1"
+			(uuid "f2d603da-87e8-4995-9d47-d255501864b2")
+		)
+		(pin "MP"
+			(uuid "3663f4e9-505a-4210-975d-bcd915a274e0")
+		)
+		(pin "4"
+			(uuid "62a7bf2a-e2be-4a40-8028-3e168d4e53b8")
+		)
+		(pin "3"
+			(uuid "53a8ad65-f774-4d32-8868-3fe619483537")
+		)
+		(pin "5"
+			(uuid "ff9f918e-9ea3-4396-b926-64e37328772e")
+		)
+		(instances
+			(project ""
+				(path "/8dfd5e49-82a4-495d-a71d-8d9575b6f72b"
+					(reference "J2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:Earth")
 		(at 255.27 101.6 270)
 		(unit 1)
@@ -9717,6 +10048,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 384.81 33.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C23733"
 			(at 384.81 33.02 0)
 			(effects
 				(font
@@ -9926,6 +10266,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C1525"
+			(at 365.76 30.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "2c0011be-b483-4b26-9533-173e1d0bdbbb")
 		)
@@ -10062,6 +10411,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C23733"
+			(at 162.56 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "49d96b17-1a5e-4e8c-96bc-48c9419958fd")
 		)
@@ -10123,6 +10481,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 341.63 30.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C23733"
 			(at 341.63 30.48 0)
 			(effects
 				(font
@@ -10199,6 +10566,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C131223"
+			(at 212.09 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "aee99589-50b4-4f84-827a-d793759a33dd")
 		)
@@ -10215,13 +10591,78 @@
 		)
 	)
 	(symbol
+		(lib_id "power:Earth")
+		(at 45.72 173.99 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "71904641-08de-43c2-8819-c72cc54ab766")
+		(property "Reference" "#PWR037"
+			(at 45.72 180.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "Earth"
+			(at 45.72 177.292 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 45.72 173.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 45.72 173.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"Earth\""
+			(at 45.72 173.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "26809c55-c194-44f8-86ac-f273cfc4aee4")
+		)
+		(instances
+			(project "altimeter"
+				(path "/8dfd5e49-82a4-495d-a71d-8d9575b6f72b"
+					(reference "#PWR037")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
 		(at 54.61 53.34 0)
 		(unit 1)
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "73d68592-9887-4814-880c-e2e70a64d169")
 		(property "Reference" "H3"
 			(at 52.07 40.1321 0)
@@ -10262,6 +10703,15 @@
 			)
 		)
 		(property "Description" "Mounting Hole with connection"
+			(at 54.61 53.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" ""
 			(at 54.61 53.34 0)
 			(effects
 				(font
@@ -10415,87 +10865,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:Conn_ARM_SWD_TagConnect_TC2030-NL")
-		(at 45.72 163.83 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(uuid "827d8070-a6f8-45d4-a3fd-85acaffac3fa")
-		(property "Reference" "J3"
-			(at 39.37 162.5599 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "TagConnect"
-			(at 50.292 152.4 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" "Connector:Tag-Connect_TC2030-IDC-NL_2x03_P1.27mm_Vertical"
-			(at 45.72 181.61 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://www.tag-connect.com/wp-content/uploads/bsk-pdf-manager/TC2030-CTX_1.pdf"
-			(at 45.72 179.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Tag-Connect ARM Cortex SWD JTAG connector, 6 pin, no legs"
-			(at 45.72 163.83 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "6"
-			(uuid "6b10ca1d-1a54-4e22-be2c-c748dadc4fb6")
-		)
-		(pin "5"
-			(uuid "a43c19cd-9e2e-401c-a6f0-66ee7e95fa2d")
-		)
-		(pin "1"
-			(uuid "4be51ba0-a43d-43d9-b730-36176bbad29d")
-		)
-		(pin "2"
-			(uuid "87b174b8-561f-4f2d-a414-5924234289dd")
-		)
-		(pin "4"
-			(uuid "e45e44a9-38cb-469b-91cc-8c71c881bc46")
-		)
-		(pin "3"
-			(uuid "f72da991-e238-4882-917f-0067c03e31e7")
-		)
-		(instances
-			(project ""
-				(path "/8dfd5e49-82a4-495d-a71d-8d9575b6f72b"
-					(reference "J3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:C_Small")
 		(at 257.81 123.19 180)
 		(unit 1)
@@ -10549,6 +10918,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" ""
+			(at 257.81 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "185237ae-d6b9-4630-8f06-49d58f2240c5")
 		)
@@ -10571,7 +10949,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "843e0db5-fc19-464b-8f91-022ef51ec3f8")
 		(property "Reference" "H2"
 			(at 81.026 54.864 0)
@@ -10612,6 +10990,15 @@
 			)
 		)
 		(property "Description" "Mounting Hole with connection"
+			(at 59.69 50.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" ""
 			(at 59.69 50.8 0)
 			(effects
 				(font
@@ -10745,6 +11132,15 @@
 			)
 		)
 		(property "Description" "3-Axis Accelerometer, 2/4/8/16g range, I2C/SPI interface, LGA-14"
+			(at 186.69 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C155670"
 			(at 186.69 52.07 0)
 			(effects
 				(font
@@ -10991,6 +11387,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C25117"
+			(at 247.65 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "d646acbd-8664-45cc-985c-8ae7e05829e1")
 		)
@@ -11061,6 +11466,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C1525"
+			(at 208.28 222.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "d631ef5f-84dc-4abc-9c60-a2a2e43f8823")
 		)
@@ -11121,6 +11535,15 @@
 			)
 		)
 		(property "Description" "USB 2.0-only 16P Type-C Receptacle connector"
+			(at 50.8 118.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C2765186"
 			(at 50.8 118.11 0)
 			(effects
 				(font
@@ -11327,7 +11750,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "b1a944b8-a260-4d17-adc0-c833c84f973b")
 		(property "Reference" "SW2"
@@ -11365,6 +11788,15 @@
 			)
 		)
 		(property "Description" "Switch, single pole double throw"
+			(at 45.72 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" ""
 			(at 45.72 34.29 0)
 			(effects
 				(font
@@ -11643,6 +12075,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C25117"
+			(at 207.01 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "04aa208e-aa44-4a4a-a7e4-8293101794f7")
 		)
@@ -11778,6 +12219,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" ""
+			(at 257.81 105.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "6a14ddd2-8cd9-4be9-ab47-79942d4351b4")
 		)
@@ -11840,6 +12290,15 @@
 			)
 		)
 		(property "Description" "Multiprotocol BLE/ANT/2.4 GHz/802.15.4 Cortex-M4F SoC, QFN-40"
+			(at 314.96 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C2895249 "
 			(at 314.96 114.3 0)
 			(effects
 				(font
@@ -12167,6 +12626,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C7420553"
+			(at 247.65 76.2 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "7b9d4ef8-ca1e-4ac1-b859-ee4cd6023336")
 		)
@@ -12184,7 +12652,7 @@
 	)
 	(symbol
 		(lib_id "power:Earth")
-		(at 35.56 69.85 0)
+		(at 35.56 64.77 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -12192,7 +12660,7 @@
 		(dnp no)
 		(uuid "e8128e9b-f09e-486c-b992-d997b03941c8")
 		(property "Reference" "#PWR025"
-			(at 35.56 76.2 0)
+			(at 35.56 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12201,7 +12669,7 @@
 			)
 		)
 		(property "Value" "Earth"
-			(at 35.56 73.406 0)
+			(at 35.56 68.326 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12209,7 +12677,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 35.56 69.85 0)
+			(at 35.56 64.77 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12218,7 +12686,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 35.56 69.85 0)
+			(at 35.56 64.77 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12227,7 +12695,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"Earth\""
-			(at 35.56 69.85 0)
+			(at 35.56 64.77 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12293,6 +12761,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 358.14 30.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C1525"
 			(at 358.14 30.48 0)
 			(effects
 				(font
@@ -12449,76 +12926,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R_Small")
-		(at 35.56 67.31 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "eca5c50b-3cb9-4632-a195-af1fea1693db")
-		(property "Reference" "R4"
-			(at 38.1 66.0399 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "5.1k"
-			(at 38.1 68.5799 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 35.56 67.31 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 35.56 67.31 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, small symbol"
-			(at 35.56 67.31 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "e51d7a19-1370-44b4-b8c1-80ec38436118")
-		)
-		(pin "2"
-			(uuid "48372e89-b904-4620-9262-20a6492e917a")
-		)
-		(instances
-			(project "altimeter"
-				(path "/8dfd5e49-82a4-495d-a71d-8d9575b6f72b"
-					(reference "R4")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:Earth")
 		(at 208.28 226.06 0)
 		(unit 1)
@@ -12591,7 +12998,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "f8775f45-ba0a-4de9-8e88-b6a354b4ad35")
 		(property "Reference" "H1"
@@ -12631,6 +13038,15 @@
 			)
 		)
 		(property "Description" "Mounting Hole without connection"
+			(at 252.73 180.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" ""
 			(at 252.73 180.34 0)
 			(effects
 				(font
@@ -12694,6 +13110,15 @@
 			)
 		)
 		(property "Description" "4Mbit Serial Flash memory, dual I/O SPI, SOIC-8 208mil"
+			(at 190.5 222.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C401661 "
 			(at 190.5 222.25 0)
 			(effects
 				(font
@@ -12781,6 +13206,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 252.73 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" ""
 			(at 252.73 46.99 0)
 			(effects
 				(font
