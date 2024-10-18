@@ -1,0 +1,28 @@
+[package]
+authors = ["Stefan Rakel"]
+categories = ["embedded", "hardware-support", "no-std"]
+description = "A platform agnostic driver to interface with the BMP388 pressure sensor"
+documentation = "https://docs.rs/bmp388"
+keywords = ["embedded-hal-driver", "pressure"]
+license = "MIT"
+name = "bmp388"
+repository = "https://github.com/ibutra/bmp388"
+version = "0.1.0"
+readme = "README.md"
+edition = "2021"
+
+rust-version = "1.65"
+
+[features]
+default = []
+
+[dependencies]
+embedded-hal = "1.0"
+embedded-hal-async = { version = "1.0" }
+
+defmt = { version = "0.3" }
+serde = { version = "1", default-features = false, features = ["derive"] }
+
+num-traits = { version = "0.2", default-features = false, features = ["libm"] }
+
+typed-builder = { version = "0.18" }
