@@ -35,6 +35,7 @@ num-integer = { version = "0.1.45", default-features = false }
 microfft = "0.5.0"
 embassy-embedded-hal = { version = "0.2.0" }
 bmp388 = { path = "./deps/bmp388", features = [] }
+lis2dh12 = { path = "./deps/lis2dh12", features = [] }
 
 [[bin]]
 name = "wren"

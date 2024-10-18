@@ -1,0 +1,32 @@
+[package]
+name = "lis2dh12"
+version = "0.7.0"
+authors = ["Tomas Kukosa <tkeksa@gmail.com>", "Robin Mueller <muellerr@irs.uni-stuttgart.de>"]
+repository = "https://github.com/tkeksa/lis2dh12"
+documentation = "https://docs.rs/lis2dh12"
+license = "Apache-2.0 OR MIT"
+description = "Platform-agnostic Rust driver for the LIS2DH12 accelerometer."
+readme = "README.md"
+keywords = ["accelerometer", "sensor", "i2c", "driver", "embedded-hal-driver"]
+categories = ["embedded", "hardware-support", "no-std"]
+edition = "2021"
+
+exclude = [
+  ".github",
+]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+default = []
+
+[dependencies]
+embedded-hal = "1.0.0"
+embedded-hal-async = "1.0.0"
+cast = {version = "0.3.0", default-features = false }
+num-traits = { version = "0.2.19", default-features = false }
+num-derive = { version = "0.4.2" }
+
+[profile.release]
+lto = true

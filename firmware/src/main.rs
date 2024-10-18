@@ -18,7 +18,8 @@ use embassy_sync::mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use static_cell::StaticCell;
 
-// use bmp388;
+use bmp388;
+use lis2dh12;
 
 use embassy_time::Timer;
 use embassy_time::Delay;
@@ -63,6 +64,7 @@ async fn main(_spawner: Spawner) {
     let flash_spi_device = SpiDevice::new(spi_bus, flash_cs);
 
     let baro = bmp388::Bmp388::new(baro_spi_device, &mut Delay).await;
+    let acc = lis2dh12::Lis2dh12::new(acc_spi_device);
 
     // Create the driver, from the HAL.
     let driver = Driver::new(p.USBD, Irqs, HardwareVbusDetect::new(Irqs));
