@@ -1,3 +1,6 @@
+// SHUT UP SHUT UP SHUT UP SHUT UP SHUT UP SHUT UP SHUT UP SHUT UP SHUT UP
+#![allow(dead_code)]
+
 use core::convert::identity;
 
 use nalgebra as na;

@@ -42,6 +42,7 @@ pub struct Bmp388<Bus> {
     pressure_calibration: PressureCalibration,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum Bmp388Error<BusError> {
     BusError(BusError),
     InvalidId,

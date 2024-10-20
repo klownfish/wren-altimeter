@@ -44,6 +44,7 @@ pub struct Lis2dh12<Bus> {
 }
 
 /// Errors returned from the [detect_i2c_addr]
+#[derive(Debug, Clone, Copy)]
 pub enum Lis2dh12Error<BusError> {
     /// Other I2C error trying to detect a device address.
     BusError(BusError),

@@ -33,9 +33,12 @@ embedded-hal-async = { version = "1.0" }
 embedded-hal-bus = { version = "0.1", features = ["async"] }
 num-integer = { version = "0.1.45", default-features = false }
 microfft = "0.5.0"
+nalgebra = { version = "0.33", default-features = false, features = ["libm"] }
 embassy-embedded-hal = { version = "0.2.0" }
 bmp388 = { path = "./deps/bmp388", features = [] }
 lis2dh12 = { path = "./deps/lis2dh12", features = [] }
+w25q32jv = { path = "./deps/w25q32jv", features = ["async"] }
+dummy-pin = "1.0.0"
 
 [[bin]]
 name = "wren"

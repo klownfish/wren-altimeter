@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 
-use core::mem;
 
 use embassy_executor::Spawner;
 use embassy_nrf::gpio::{Level, Output, OutputDrive};
@@ -10,7 +9,6 @@ use embassy_nrf::{bind_interrupts, peripherals, spim, usb, pac};
 use embassy_nrf::usb::vbus_detect::{HardwareVbusDetect, VbusDetect};
 use embassy_nrf::usb::{Driver, Instance};
 use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
-use embassy_usb::driver::EndpointError;
 use embassy_usb::{Builder, Config};
 
 use embassy_embedded_hal::shared_bus::asynch::spi::SpiDevice;
@@ -23,9 +21,13 @@ use lis2dh12;
 
 use embassy_time::Timer;
 use embassy_time::Delay;
+use w25q32jv::W25q32jv;
 use {defmt_rtt as _, panic_probe as _};
 
+#[allow(unused_imports)]
 use defmt::*;
+
+use dummy_pin::DummyPin;
 
 mod kalman;
 
@@ -34,14 +36,6 @@ bind_interrupts!(struct Irqs {
     SPIM3 => spim::InterruptHandler<peripherals::SPI3>;
     POWER_CLOCK => usb::vbus_detect::InterruptHandler;
 });
-
-fn test_kalman() {
-    let mut kalman = kalman::Kalman::<3>::new();
-    let a = kalman::AMatrix::<3>::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-    let q = kalman::AMatrix::<3>::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-    kalman.update_process(&q, &a);
-}
-
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
@@ -72,10 +66,20 @@ async fn main(_spawner: Spawner) {
     let acc_spi_device = SpiDevice::new(spi_bus, acc_cs);
     let flash_spi_device = SpiDevice::new(spi_bus, flash_cs);
 
-    let baro = bmp388::Bmp388::new(baro_spi_device, &mut Delay).await;
-    let acc = lis2dh12::Lis2dh12::new(acc_spi_device);
+    let mut baro = bmp388::Bmp388::new(baro_spi_device, &mut Delay).await.expect("baro failed");
+    baro.set_sampling_rate(bmp388::SamplingRate::ms10).await.unwrap();
 
-    test_kalman();
+    let mut acc = lis2dh12::Lis2dh12::new(acc_spi_device).await.expect("baro failed");
+    acc.enable_axis((true, true, true)).await.unwrap();
+
+    // should probably update the driver instead of using dummy pin but whatever
+    let mut flash = W25q32jv::new(flash_spi_device, DummyPin::new_low(), DummyPin::new_low()).unwrap();
+    flash.device_id_async().await.expect("flash failed");
+
+    let mut kalman = kalman::Kalman::<3>::new();
+    let a = kalman::AMatrix::<3>::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+    let q = kalman::AMatrix::<3>::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+    kalman.update_process(&q, &a);
 
     // Create the driver, from the HAL.
     let driver = Driver::new(p.USBD, Irqs, HardwareVbusDetect::new(Irqs));
