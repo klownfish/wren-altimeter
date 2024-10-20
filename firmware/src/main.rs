@@ -27,11 +27,20 @@ use {defmt_rtt as _, panic_probe as _};
 
 use defmt::*;
 
+mod kalman;
+
 bind_interrupts!(struct Irqs {
     USBD => usb::InterruptHandler<peripherals::USBD>;
     SPIM3 => spim::InterruptHandler<peripherals::SPI3>;
     POWER_CLOCK => usb::vbus_detect::InterruptHandler;
 });
+
+fn test_kalman() {
+    let mut kalman = kalman::Kalman::<3>::new();
+    let a = kalman::AMatrix::<3>::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+    let q = kalman::AMatrix::<3>::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+    kalman.update_process(&q, &a);
+}
 
 
 #[embassy_executor::main]
@@ -65,6 +74,8 @@ async fn main(_spawner: Spawner) {
 
     let baro = bmp388::Bmp388::new(baro_spi_device, &mut Delay).await;
     let acc = lis2dh12::Lis2dh12::new(acc_spi_device);
+
+    test_kalman();
 
     // Create the driver, from the HAL.
     let driver = Driver::new(p.USBD, Irqs, HardwareVbusDetect::new(Irqs));
