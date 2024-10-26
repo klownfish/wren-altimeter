@@ -8,6 +8,6 @@ A small altimeter
 * ultra low power
   * 20mAh -> hours
 
-[schematic](alitmeter.pdf)
+[schematic](hardware/alitmeter.pdf)
 
 ![](altimeter.jpg)
