@@ -171,8 +171,8 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
             temperature_calibration: TemperatureCalibration::default(),
             pressure_calibration: PressureCalibration::default(),
         };
-
-        if chip.id().await? == CHIP_ID {
+        let id = chip.id().await?;
+        if id == CHIP_ID {
             chip.reset().await?;
             // without this the first few bytes of calib data could be incorrectly zero
             delay.delay_ms(10).await;
@@ -181,18 +181,19 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
             Ok(chip)
 
         } else {
-            error!("Bmp388 failed to initialize");
+            error!("Bmp388 failed to initialize, id: {}", id);
+
             Err(Bmp388Error::InvalidId)
         }
     }
 
     pub(crate) async fn read_calibration(&mut self) -> Result<(), Bmp388Error<Spi::Error>> {
-        let mut data: [u8; 22] = [0; 22];
+        let mut data: [u8; 23] = [0; 23];
         data[0] = Register::calib00 as u8;
         self.read_bytes(&mut data).await?;
 
         let mut new_data: [u8; 21] = [0; 21]; // bruh moment
-        new_data.copy_from_slice(&data[1..]);
+        new_data.copy_from_slice(&data[2..]);
 
         self.temperature_calibration.update_calibration(new_data);
         self.pressure_calibration.update_calibration(new_data);
@@ -202,11 +203,11 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
 
     /// Reads and returns sensor values
     pub async fn sensor_values(&mut self) -> Result<SensorData, Bmp388Error<Spi::Error>> {
-        let mut data: [u8; 7] = [Register::sensor_data as u8, 0, 0, 0, 0, 0, 0];
+        let mut data: [u8; 8] = [Register::sensor_data as u8, 0, 0, 0, 0, 0, 0, 0];
         self.read_bytes(&mut data).await?;
 
-        let uncompensated_press = (data[0] as u32) | (data[1] as u32) << 8 | (data[2] as u32) << 16;
-        let uncompensated_temp = (data[3] as u32) | (data[4] as u32) << 8 | (data[5] as u32) << 16;
+        let uncompensated_press = (data[2] as u32) | (data[3] as u32) << 8 | (data[4] as u32) << 16;
+        let uncompensated_temp = (data[5] as u32) | (data[6] as u32) << 8 | (data[7] as u32) << 16;
 
         let temperature = self.compensate_temp(uncompensated_temp);
         let pressure = self.compensate_pressure(uncompensated_press, temperature);
@@ -319,14 +320,16 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
     }
 
     async fn read_register(&mut self, reg: Register) -> Result<u8, Spi::Error> {
-        let mut buf: [u8; 2] = [reg as u8, 0];
-        self.read_bytes(&mut buf).await?;
-        Ok(buf[1])
+        let mut buf: [u8; 3] = [reg as u8 | (1 << 7), 0, 0];
+        self.bus.transfer_in_place(&mut buf[0..3]).await?;
+        Ok(buf[2])
     }
 
     async fn read_bytes(&mut self, data: &mut [u8]) -> Result<(), Spi::Error> {
         data[0] |= 1 << 7; // set bit 7 to read
-        self.bus.transfer_in_place(data).await
+
+        self.bus.transfer_in_place(data).await?;
+        Ok(())
     }
 
     async fn write_bytes(&mut self, data: &[u8]) -> Result<(), Spi::Error> {
