@@ -24,6 +24,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrayvec"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
+
+[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -595,15 +601,16 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "libm"
-version = "0.2.8"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
+checksum = "8355be11b20d696c8f18f6cc018c4e372165b1fa8126cef092399c9951984ffa"
 
 [[package]]
 name = "lis2dh12"
 version = "0.7.0"
 dependencies = [
  "cast",
+ "defmt",
  "embedded-hal 1.0.0",
  "embedded-hal-async",
  "num-derive",
@@ -1195,6 +1202,7 @@ dependencies = [
 name = "wren"
 version = "0.1.0"
 dependencies = [
+ "arrayvec",
  "bmp388",
  "cortex-m",
  "cortex-m-rt",
@@ -1215,6 +1223,7 @@ dependencies = [
  "embedded-io-async",
  "embedded-storage",
  "fixed",
+ "libm",
  "lis2dh12",
  "microfft",
  "nalgebra",

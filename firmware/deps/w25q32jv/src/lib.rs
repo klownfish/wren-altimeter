@@ -10,7 +10,7 @@ mod w25q32jv;
 mod w25q32jv_async;
 
 pub const PAGE_SIZE: u32 = 256;
-pub const N_PAGES: u32 = 16384;
+pub const N_PAGES: u32 = 2048;
 pub const CAPACITY: u32 = PAGE_SIZE * N_PAGES;
 
 pub const SECTOR_SIZE: u32 = PAGE_SIZE * 16;

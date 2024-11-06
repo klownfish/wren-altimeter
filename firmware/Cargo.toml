@@ -1,5 +1,3 @@
-# This file was automatically generated.
-
 [package]
 edition = "2021"
 name = "wren"
@@ -39,6 +37,8 @@ bmp388 = { path = "./deps/bmp388", features = [] }
 lis2dh12 = { path = "./deps/lis2dh12", features = [] }
 w25q32jv = { path = "./deps/w25q32jv", features = ["async"] }
 dummy-pin = "1.0.0"
+libm = "0.2.11"
+arrayvec = { version = "0.7.6", default-features = false }
 
 [[bin]]
 name = "wren"
