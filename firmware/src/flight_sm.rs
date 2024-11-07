@@ -5,13 +5,14 @@ use embassy_time::Instant;
 
 use crate::kalman::{self, Kalman};
 
-#[derive(PartialEq, Clone)]
+#[repr(u8)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum FlightState {
-    Idle,
-    MaybeLaunched,
-    Boost,
-    Coast,
-    Descent
+    Idle = 0,
+    MaybeLaunched = 1,
+    Boost = 2,
+    Coast = 3,
+    Descent = 4
 }
 
 pub struct FlightSM {
@@ -157,8 +158,8 @@ impl FlightSM {
         }
     }
 
-    pub fn get_state(&self) -> &FlightState {
-        &self.state
+    pub fn get_state(&self) -> FlightState {
+        self.state
     }
 
     pub fn get_altitude(&self) -> f32{
@@ -175,11 +176,12 @@ impl FlightSM {
 
 
     // noise from acceleration is the dominating factor. We can extrapolate the rest from that
+    // TODO think really hard about this
     fn calc_q_matrix(dt: f32, sigma_accel: f32) -> kalman::QMatrix<3> {
         let q = kalman::QMatrix::<3>::new(
             dt.powi(4) / 4.0,   dt.powi(3) / 2.0,   dt.powi(2) / 2.0,
             dt.powi(3) / 2.0,   dt.powi(2),         dt,
-            dt.powi(2) / 2.0,   dt,                 1.0
+            dt.powi(2) / 2.0,   dt,                 dt
         );
         q * sigma_accel
     }

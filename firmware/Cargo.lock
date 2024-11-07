@@ -1223,6 +1223,7 @@ dependencies = [
  "embedded-io-async",
  "embedded-storage",
  "fixed",
+ "heapless",
  "libm",
  "lis2dh12",
  "microfft",

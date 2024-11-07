@@ -39,6 +39,7 @@ w25q32jv = { path = "./deps/w25q32jv", features = ["async"] }
 dummy-pin = "1.0.0"
 libm = "0.2.11"
 arrayvec = { version = "0.7.6", default-features = false }
+heapless = "0.8.0"
 
 [[bin]]
 name = "wren"

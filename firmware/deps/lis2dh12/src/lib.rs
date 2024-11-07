@@ -22,6 +22,8 @@ use cast::{f32, i16};
 use crate::reg::*;
 pub use crate::reg::{Aoi6d, FifoMode, FullScale, Mode, Odr};
 
+use defmt::{error, info};
+
 /// Data status structure,
 /// decoded from STATUS_REG register
 #[derive(Debug)]
@@ -73,7 +75,9 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Lis2dh12<Spi> {
         };
 
         // Ensure we have the correct device ID
-        if dev.get_device_id().await? != DEVICE_ID {
+        let id = dev.get_device_id().await?;
+        if id != DEVICE_ID {
+            error!("invalid device ID: {}", id);
             Err(Lis2dh12Error::InvalidDeviceId)
         } else{
             Ok(dev)
@@ -575,14 +579,18 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Lis2dh12<Spi> {
 
     #[inline]
     async fn read_reg(&mut self, reg: Register) -> Result<u8, Lis2dh12Error<Spi::Error>> {
-        let mut buf: [u8; 2] = [reg as u8, 0];
-        self.read_bytes(&mut buf).await?;
+        let mut buf: [u8; 2] = [reg as u8 | (1 << 6) | (1 << 7), 0];
+        info!("bajs {}", buf);
+        self.bus.transfer_in_place(&mut buf[0..2]).await?;
+        info!("bajs {}", buf);
         Ok(buf[1])
     }
 
     #[inline]
     async fn read_bytes(&mut self, buffer: &mut [u8]) -> Result<(), Lis2dh12Error<Spi::Error>> {
         buffer[0] |= 1 << 7; // set bit 7 to read
+        buffer[0] |= 1 << 6; // set bit 6 to automatically increment the index when reading multiple bytes
+        info!("hej hej {}", buffer);
         self.bus.transfer_in_place(buffer).await?;
         Ok(())
     }
