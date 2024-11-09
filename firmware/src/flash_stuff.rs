@@ -11,7 +11,8 @@ pub struct FlashStuff<T: embedded_hal_async::spi::SpiDevice> {
 enum MessageIds {
     Metadata = 1,
     Telemetry = 2,
-    State = 3
+    State = 3,
+    PowerOn = 4
 }
 
 impl<T: embedded_hal_async::spi::SpiDevice> FlashStuff<T> {
@@ -85,20 +86,25 @@ impl<T: embedded_hal_async::spi::SpiDevice> FlashStuff<T> {
     }
 
     pub async fn write_metadata(&mut self, time: Instant, volt: f32) {
-        let time_int: u16 = time.as_millis() as u16;
+        let time_int: u32 = time.as_millis() as u32;
         let volt_int: u16 = (volt * 1000.0) as u16;
 
         let time_bytes = time_int.to_le_bytes();
         let volt_bytes = volt_int.to_le_bytes();
-        let mut buf = [0_u8; 5];
+        let mut buf = [0_u8; 7];
         buf[0] = MessageIds::Metadata as u8;
-        buf[1..3].copy_from_slice(&time_bytes);
-        buf[3..5].copy_from_slice(&volt_bytes);
+        buf[1..5].copy_from_slice(&time_bytes);
+        buf[5..7].copy_from_slice(&volt_bytes);
         self.write(&buf).await.unwrap();
     }
 
     pub async fn write_state(&mut self, state: FlightState) {
         let buf = [MessageIds::State as u8, state as u8];
+        self.write(&buf).await.unwrap();
+    }
+
+    pub async fn write_power_on(&mut self) {
+        let buf = [MessageIds::PowerOn as u8];
         self.write(&buf).await.unwrap();
     }
 }

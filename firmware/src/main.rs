@@ -60,6 +60,13 @@ async fn flight_task(
     acc.set_fs(lis2dh12::FullScale::G16).await.expect("couldn't set acc scale");
     acc.set_odr(lis2dh12::Odr::Hz100).await.expect("couldn't set acc ODR");
 
+    // write multiple times to guarante a proper sync if the previous state is corrupt
+    for _ in 0..16 {
+        flash.lock().await.write_power_on().await;
+    }
+    flash.lock().await.write_metadata(Instant::now(), 0.0).await;
+    flash.lock().await.write_state(FlightState::Idle).await;
+
     let mut flight_sm = FlightSM::new();
 
     let mut max_altitude = 0_f32;
@@ -205,7 +212,7 @@ async fn handle_command<'a>(
         b"read_flash" => {
             let mut str_buf: heapless::String<64> = Default::default();
             let mut flash = flash.lock().await;
-            write!(str_buf, "{{'length':{}}}\n", flash.get_index()).unwrap();
+            write!(str_buf, "{{'length':{}}}", flash.get_index()).unwrap();
             class.write_packet(str_buf.as_bytes()).await.unwrap();
             let mut read: u32 = 0;
             let mut buf = [0_u8; 256];
@@ -226,7 +233,7 @@ async fn handle_command<'a>(
             let flash = flash.lock().await;
             let mut str_buf: heapless::String<128> = Default::default();
             write!(str_buf,
-                "{{'used_flash':{}, 'flash_size':{}, 'time':{}, 'volt':{}}}\n",
+                "{{'used_flash':{}, 'flash_size':{}, 'time':{}, 'volt':{}}}",
                 flash.get_index(), flash.get_size(), Instant::now().as_millis(), 3.8
             ).unwrap();
             class.write_packet(str_buf.as_bytes()).await.unwrap();
