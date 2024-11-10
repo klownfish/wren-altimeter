@@ -2,7 +2,7 @@
 
 use nalgebra::{ComplexField, Quaternion, RealField, UnitQuaternion, Vector3};
 use embassy_time::Instant;
-
+use defmt::{info};
 use crate::kalman::{self, Kalman};
 
 #[repr(u8)]
@@ -57,7 +57,8 @@ impl FlightSM {
     pub fn update(&mut self, altitude: f32, acceleration: Vector3<f32>) {
         let now = Instant::now();
         let dt: f32 = now.duration_since(self.last_update).as_millis() as f32 / 1000.0;
-
+        self.last_update = now;
+        info!("dt: {}", dt);
         // accel stuff
         let accel_norm = acceleration.norm();
         if accel_norm < Self::GRAVITY_UPPER_THRESHOLD && accel_norm > Self::GRAVITY_LOWER_THRESHOLD {
@@ -84,35 +85,42 @@ impl FlightSM {
         self.kalman.set_process(&q, &a);
 
         // prepare kalman measurement
-        let r = kalman::RMatrix::<3>::new(
-            Self::SIGMA_MEASUREMENT_ALTITUDE, 0.0, 0.0,
-            0.0, 0.0, 0.0,
-            0.0, 0.0, Self::SIGMA_MEASUREMENT_ACCEL
-        );
 
-        let z = kalman::ZMatrix::<3>::new(
-            altitude,
-            0.0,
-            vertical_acceleration
-        );
+
+
 
         // during the descent phase the acceleration is pointless so disregard it
         // literally no point in using a kalman filter then but yolo
-        let h;
         if self.state == FlightState::Descent {
-            h = kalman::HMatrix::<3>::new(
+            let h = kalman::HMatrix::<3, 1>::new(
                 1.0, 0.0, 0.0,
-                0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0
             );
+            let z = kalman::ZMatrix::<3, 1>::new(
+                altitude,
+            );
+            let r = kalman::RMatrix::<3, 1>::new(
+                Self::SIGMA_MEASUREMENT_ALTITUDE
+            );
+
+            self.kalman.insert_measurement(&z, &r, &h);
         } else {
-            h = kalman::HMatrix::<3>::new(
+            let h = kalman::HMatrix::<3, 2>::new(
                 1.0, 0.0, 0.0,
-                0.0, 0.0, 0.0,
                 0.0, 0.0, 1.0
             );
+            let z = kalman::ZMatrix::<3, 2>::new(
+                altitude,
+                vertical_acceleration
+            );
+            let r = kalman::RMatrix::<3, 2>::new(
+                Self::SIGMA_MEASUREMENT_ALTITUDE, 0.0,
+                0.0, Self::SIGMA_MEASUREMENT_ACCEL
+            );
+
+            self.kalman.insert_measurement(&z, &r, &h);
+
         }
-        self.kalman.insert_measurement(&z, &r, &h);
+
 
 
         // evaluate state

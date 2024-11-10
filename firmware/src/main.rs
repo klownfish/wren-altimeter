@@ -72,8 +72,8 @@ async fn flight_task(
     let mut max_altitude = 0_f32;
     let mut cycle_count = 0_u32;
     loop {
-        let to_sleep = Instant::now().as_millis() % 50;
-        Timer::after_millis(to_sleep).await;
+        // let to_sleep = Instant::now().as_millis() % 50;
+        Timer::after_millis(50).await;
 
         // get measurements
         let altitude = match baro.sensor_values().await {
@@ -181,23 +181,27 @@ async fn usb_task(
     let mut command_buf = [0_u8; 128];
     let mut command_index: usize = 0;
     loop {
-        if let Ok(len) = class.read_packet(&mut rx_buf).await {
-            let slice = &mut rx_buf[0..len];
-            for c in slice {
-                match c {
-                    b'\r' => continue,
-                    b'\n' =>  {
-                        handle_command(&mut class, &command_buf, command_index, flash).await;
-                        command_index = 0
-                    }
-                    _ => {
-                        command_buf[command_index] = *c;
-                        command_index += 1
+        class.wait_connection().await;
+        loop {
+            if let Ok(len) = class.read_packet(&mut rx_buf).await {
+                let slice = &mut rx_buf[0..len];
+                for c in slice {
+                    match c {
+                        b'\r' => continue,
+                        b'\n' =>  {
+                            handle_command(&mut class, &command_buf, command_index, flash).await;
+                            command_index = 0
+                        }
+                        _ => {
+                            command_buf[command_index] = *c;
+                            command_index += 1
+                        }
                     }
                 }
+            } else {
+                break;
             }
         }
-
     }
 }
 
@@ -293,7 +297,7 @@ async fn main(spawner: Spawner) -> ! {
     Timer::after_millis(500).await;
 
     let mut spi_config = spim::Config::default();
-    spi_config.frequency = spim::Frequency::M1;
+    spi_config.frequency = spim::Frequency::M8;
 
     static SPI_BUS: StaticCell<Mutex<ThreadModeRawMutex, spim::Spim<peripherals::SPI2>>> = StaticCell::new();
     let spi = spim::Spim::new(p.SPI2, Irqs, p.P0_29, p.P0_02, p.P0_28, spi_config);
@@ -314,7 +318,6 @@ async fn main(spawner: Spawner) -> ! {
     static FLASH: StaticCell<Mutex<ThreadModeRawMutex, FlashStuff<Spi2Device>>> = StaticCell::new();
     let flash = FLASH.init(Mutex::new(FlashStuff::new(flash_spi_device).await.unwrap()));
 
-    // spawner.spawn(flash_task()).unwrap();
 
     spawner.spawn(flight_task(baro_spi_device, acc_spi_device, flash)).unwrap();
     spawner.spawn(usb_task(spawner, usb_driver, flash)).unwrap();
