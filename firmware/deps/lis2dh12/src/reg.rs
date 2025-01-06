@@ -76,6 +76,7 @@ pub const DEVICE_ID: u8 = 0b0011_0011;
 // === TEMP_CFG_REG (1Fh) ===
 
 pub const TEMP_EN: u8 = 0b1100_0000;
+pub const ADC_EN: u8 = 0b1000_0000;
 
 // === CTRL_REG1 (20h) ===
 

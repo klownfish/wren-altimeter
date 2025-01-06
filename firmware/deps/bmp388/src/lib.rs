@@ -157,7 +157,9 @@ impl<Bus> Bmp388<Bus>  {
     }
 }
 
+
 impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
+
     /// Creates new BMP388 driver
     ///
     /// The Delay is used to correctly wait for the calibration data after resetting the chip.

@@ -3,25 +3,53 @@ edition = "2021"
 name = "wren"
 version = "0.1.0"
 
-[dependencies]
-
-embassy-futures = { version = "0.1.0" }
-embassy-sync = { version = "0.6.0", features = ["defmt"] }
-embassy-executor = { version = "0.6.0", features = ["task-arena-size-32768", "arch-cortex-m", "executor-thread", "executor-interrupt", "defmt", "integrated-timers"] }
-embassy-time = { version = "0.3.2", features = ["defmt", "defmt-timestamp-uptime"] }
+# embedded dependencies
+[target.'cfg(target_os = "none")'.dependencies]
 embassy-nrf = { version = "0.2.0", features = ["defmt", "nrf52833", "time-driver-rtc1", "gpiote", "nfc-pins-as-gpio", "time", "unstable-pac"] }
+embassy-executor = { version = "0.7.0", features = ["task-arena-size-32768", "arch-cortex-m", "executor-thread", "executor-interrupt", "defmt"] }
+embassy-sync = { version = "0.6.1", features = ["defmt"] }
+embassy-time = { version = "0.4.0", features = ["defmt", "defmt-timestamp-uptime"] }
 embassy-usb = { version = "0.3.0", features = ["defmt"] }
-embedded-io = { version = "0.6.0", features = ["defmt-03"]  }
-embedded-io-async = { version = "0.6.1", features = ["defmt-03"] }
 
-defmt = "0.3"
-defmt-rtt = "0.4"
-
-fixed = "1.10.0"
-static_cell = { version = "2" }
 cortex-m = { version = "0.7.6", features = ["inline-asm", "critical-section-single-core"] }
 cortex-m-rt = "0.7.0"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
+defmt-rtt = "0.4"
+bmp388 = { path = "./deps/bmp388", features = [] }
+lis2dh12 = { path = "./deps/lis2dh12", features = [] }
+w25q32jv = { path = "./deps/w25q32jv", features = ["async"] }
+
+embedded-io = { version = "0.6.0", features = ["defmt-03"]  }
+embedded-io-async = { version = "0.6.1", features = ["defmt-03"] }
+
+
+# native dependencies
+[target.'cfg(not(target_os = "none"))'.dependencies]
+embassy-sync = { version = "0.6.1", features = ["log", "std"] }
+embassy-executor = { version = "0.7.0", features = ["task-arena-size-32768", "arch-std", "executor-thread", "log"] }
+embassy-time = { version = "0.4.0", features = ["log", "std", ] }
+embassy-net = { version = "0.5.0", features=[ "log", "medium-ethernet", "medium-ip", "tcp", "udp", "dns", "dhcpv4", "proto-ipv6"] }
+critical-section = { version = "1.1", features = ["std"] }
+log = "0.4.22"
+env_logger = "0.10"
+embedded-io = { version = "0.6.0", features = []  }
+embedded-io-async = { version = "0.6.1", features = [] }
+
+# reuse some stuff for the mocking drivers
+bmp388 = { path = "./deps/bmp388", features = [] }
+lis2dh12 = { path = "./deps/lis2dh12", features = [] }
+w25q32jv = { path = "./deps/w25q32jv", features = ["async"] }
+
+
+# common dependencies
+[dependencies]
+embassy-futures = { version = "0.1.0" }
+embassy-embedded-hal = { version = "0.2.0" }
+
+defmt = "0.3"
+
+fixed = "1.10.0"
+static_cell = { version = "2" }
 rand = { version = "0.8.4", default-features = false }
 embedded-storage = "0.3.1"
 usbd-hid = "0.8.1"
@@ -32,10 +60,6 @@ embedded-hal-bus = { version = "0.1", features = ["async"] }
 num-integer = { version = "0.1.45", default-features = false }
 microfft = "0.5.0"
 nalgebra = { version = "0.33", default-features = false, features = ["libm"] }
-embassy-embedded-hal = { version = "0.2.0" }
-bmp388 = { path = "./deps/bmp388", features = [] }
-lis2dh12 = { path = "./deps/lis2dh12", features = [] }
-w25q32jv = { path = "./deps/w25q32jv", features = ["async"] }
 dummy-pin = "1.0.0"
 libm = "0.2.11"
 arrayvec = { version = "0.7.6", default-features = false }
@@ -60,9 +84,11 @@ incremental = true
 
 
 [patch.crates-io]
-embassy-time = { git = "https://github.com/embassy-rs/embassy", rev = "e7dfc2bc0a9f8abdbc06f90622e5c2e618f3c9b4" }
-embassy-executor = { git = "https://github.com/embassy-rs/embassy", rev = "e7dfc2bc0a9f8abdbc06f90622e5c2e618f3c9b4" }
-embassy-usb = { git = "https://github.com/embassy-rs/embassy", rev = "e7dfc2bc0a9f8abdbc06f90622e5c2e618f3c9b4" }
-embassy-sync = { git = "https://github.com/embassy-rs/embassy", rev = "e7dfc2bc0a9f8abdbc06f90622e5c2e618f3c9b4" }
-embassy-embedded-hal = { git = "https://github.com/embassy-rs/embassy", rev = "e7dfc2bc0a9f8abdbc06f90622e5c2e618f3c9b4" }
-embassy-nrf = { git = "https://github.com/embassy-rs/embassy", rev = "e7dfc2bc0a9f8abdbc06f90622e5c2e618f3c9b4" }
+embassy-time = { git = "https://github.com/embassy-rs/embassy", rev = "ad2f7c329bbbefc0e3be38b36627705a5f42427b" }
+embassy-executor = { git = "https://github.com/embassy-rs/embassy", rev = "ad2f7c329bbbefc0e3be38b36627705a5f42427b" }
+embassy-usb = { git = "https://github.com/embassy-rs/embassy", rev = "ad2f7c329bbbefc0e3be38b36627705a5f42427b" }
+embassy-sync = { git = "https://github.com/embassy-rs/embassy", rev = "ad2f7c329bbbefc0e3be38b36627705a5f42427b" }
+embassy-embedded-hal = { git = "https://github.com/embassy-rs/embassy", rev = "ad2f7c329bbbefc0e3be38b36627705a5f42427b" }
+embassy-nrf = { git = "https://github.com/embassy-rs/embassy", rev = "ad2f7c329bbbefc0e3be38b36627705a5f42427b" }
+embassy-time-driver = { git = "https://github.com/embassy-rs/embassy", rev = "ad2f7c329bbbefc0e3be38b36627705a5f42427b" }
+embassy-net = { git = "https://github.com/embassy-rs/embassy", rev = "ad2f7c329bbbefc0e3be38b36627705a5f42427b" }

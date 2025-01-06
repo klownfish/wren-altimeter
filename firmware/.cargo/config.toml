@@ -1,6 +1,8 @@
 [target.thumbv7em-none-eabihf]
 runner = 'probe-rs run --chip nRF52833_xxAA'
 
+[target.'cfg(not(target_os = "none"))']
+
 [build]
 target = "thumbv7em-none-eabihf"
 

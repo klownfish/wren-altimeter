@@ -6,7 +6,6 @@
 //! [trait]: https://docs.rs/accelerometer/latest/accelerometer/trait.Accelerometer.html
 //!
 
-#![deny(missing_docs)]
 #![deny(warnings)]
 #![no_std]
 #![forbid(unsafe_code)]
@@ -83,6 +82,11 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Lis2dh12<Spi> {
             Ok(dev)
         }
 
+    }
+
+    pub async fn enabled_adcs(&mut self) -> Result<(), Lis2dh12Error<Spi::Error>> {
+        self.write_reg(Register::TEMP_CFG_REG, ADC_EN).await?;
+        Ok(())
     }
 
     /// `WHO_AM_I` register

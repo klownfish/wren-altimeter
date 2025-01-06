@@ -1,7 +1,11 @@
-use nalgebra as na;
+#[allow(unused_imports)]
+#[cfg(target_os = "none")]
+use defmt::{debug, error, info, warn};
 
-#[allow(unused)]
-use defmt::{info};
+#[allow(unused_imports)]
+#[cfg(not(target_os = "none"))]
+use log::{debug, error, info, warn};
+use nalgebra as na;
 // this didn't work as I would've hoped (the type system doesn't differentiate)
 // but it is still a moderately useful
 pub type AMatrix<const DIM: usize> = na::SMatrix<f32, DIM, DIM>;
@@ -37,9 +41,10 @@ impl<const DIM: usize> Kalman<DIM> {
         }
     }
 
-    pub fn set_process(&mut self,
+    pub fn set_process(
+        &mut self,
         q: &QMatrix<DIM>, // process covariance
-        a: &AMatrix<DIM> // how the state transitions (i.e. vel += acc)
+        a: &AMatrix<DIM>, // how the state transitions (i.e. vel += acc)
     ) {
         self.q = *q;
         self.a = *a;
@@ -54,7 +59,8 @@ impl<const DIM: usize> Kalman<DIM> {
         self.x
     }
 
-    pub fn insert_measurement<const MEAS_DIM: usize>(&mut self,
+    pub fn insert_measurement<const MEAS_DIM: usize>(
+        &mut self,
         z: &ZMatrix<DIM, MEAS_DIM>, // measurement vector
         r: &RMatrix<DIM, MEAS_DIM>, // Noise in the measurement (typically diagonal matrix but only on indexes with measurements)
         h: &HMatrix<DIM, MEAS_DIM>, // Maps the measurement onto the state (typically identity matrix)
