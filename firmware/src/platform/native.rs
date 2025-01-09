@@ -2,6 +2,8 @@ use std::fs::File;
 use std::path::Path;
 use std::io::{self, BufRead};
 use std::convert::Infallible;
+use std::env;
+use std::io::Write;
 
 #[allow(unused_imports)]
 use log::{info, warn, error, debug};
@@ -31,7 +33,7 @@ pub struct MockAccelerometer {
 }
 
 pub struct MockFlashMemory {
-
+    file: File
 }
 
 impl MockBarometer {
@@ -101,8 +103,16 @@ impl MockAccelerometer {
 
 impl MockFlashMemory {
     pub fn new() -> Self {
-        Self {
+        let tmp_dir = env::temp_dir();
+        let path = tmp_dir.join("wren_flash.bin");
 
+        let mut file = match File::create(&path) {
+            Err(why) => panic!("couldn't create flash file {}", why),
+            Ok(file) => file,
+        };
+
+        Self {
+            file: file
         }
     }
 }
@@ -154,6 +164,7 @@ impl FlashMemory<FlashMemoryError> for FlashMemoryType {
     }
 
     async fn write(&mut self, address: u32, data: &[u8]) -> Result<(), FlashMemoryError> {
+        self.file.write_all(data).unwrap();
         Ok(())
     }
 

@@ -4,11 +4,11 @@
 
 #[allow(unused_imports)]
 #[cfg(target_os = "none")]
-use defmt::{debug, error, info, warn};
+use defmt::{debug, error, info, warn, trace};
 
 #[allow(unused_imports)]
 #[cfg(not(target_os = "none"))]
-use log::{debug, error, info, warn};
+use log::{debug, error, info, warn, trace};
 
 #[cfg(not(target_os = "none"))]
 use env_logger;
@@ -33,11 +33,10 @@ use embassy_sync::mutex::Mutex;
 use embassy_time::{Delay, Instant, Timer};
 use flash_writer::FlashWriter;
 use flight_sm::{FlightSM, FlightState};
-use libm::pow;
 use nalgebra::Vector3;
 use platform::{
-    Accelerometer, AccelerometerError, AccelerometerType, Barometer, BarometerError, BarometerType, FlashMemory,
-    FlashMemoryError, FlashMemoryType,
+    Accelerometer, AccelerometerType, Barometer, BarometerType,
+    FlashMemoryType,
 };
 use static_cell::StaticCell;
 
@@ -49,7 +48,6 @@ mod platform;
 
 #[cfg(target_os = "none")]
 mod usb_handler;
-
 
 #[cfg(target_os = "none")]
 bind_interrupts!(struct Irqs {
@@ -76,10 +74,10 @@ async fn flight_task(
     let mut max_altitude = 0_f32;
     let mut cycle_count = 0_u32;
     loop {
-        Timer::after_millis(20).await;
+        Timer::after_millis(20).await; // make this stable 50Hz
         // get measurements
-        let altitude = match baro.read_temp_and_pressure().await {
-            Ok(val) => (288.15_f64 / 0.0065_f64 * (pow(val.pressure / 1013.25_f64, -0.1903_f64) - 1_f64)) as f32,
+        let baro_reading = match baro.read_temp_and_pressure().await {
+            Ok(val) => val,
             Err(_) => {
                 error!("Could not get baro measurement");
                 continue;
@@ -96,24 +94,23 @@ async fn flight_task(
         cycle_count += 1;
 
         let old_state = flight_sm.get_state();
-        flight_sm.update(altitude, acceleration);
+        flight_sm.update(baro_reading.pressure, acceleration);
         let new_state = flight_sm.get_state();
 
         if flight_sm.get_relative_altitude() > max_altitude {
             max_altitude = flight_sm.get_relative_altitude();
         }
 
-        let mut write_every = match flight_sm.get_state() {
+        let write_every = match flight_sm.get_state() {
             FlightState::Boost => 1,
+            FlightState::MaybeLaunched => 1,
             FlightState::Idle => 50,
-            _ => 10,
+            _ => 5,
         };
-        write_every = 1;
-        // error!("{} {} {}", flight_sm.get_relative_altitude(), flight_sm.get_vertical_velocity(), flight_sm.get_vertical_acceleration());
 
         if cycle_count % write_every == 0 {
             flash.lock().await.write_telem(flight_sm.get_relative_altitude(), flight_sm.get_vertical_velocity(), flight_sm.get_vertical_acceleration()).await;
-            error!("{} {} {}", flight_sm.get_relative_altitude(), flight_sm.get_vertical_velocity(), flight_sm.get_vertical_acceleration());
+            info!("telemetry {} {} {}", flight_sm.get_relative_altitude(), flight_sm.get_vertical_velocity(), flight_sm.get_vertical_acceleration());
         }
 
         if cycle_count % (write_every * 10) == 0 {
@@ -121,10 +118,13 @@ async fn flight_task(
         }
 
         if old_state != new_state {
-            error!("state changed {:?}", new_state);
-            error!("{} {} {}", flight_sm.get_relative_altitude(), flight_sm.get_vertical_velocity(), flight_sm.get_vertical_acceleration());
+            warn!("state changed {:?}", new_state);
             flash.lock().await.write_state(new_state).await;
         }
+
+        trace!("debug {} {} {}", flight_sm.get_absolute_altitude(), flight_sm.get_vertical_velocity(), flight_sm.get_vertical_acceleration());
+        trace!("debug raw {} {} {} {}", baro_reading.pressure, acceleration[0], acceleration[1], acceleration[2]);
+        trace!("debug flash {}", flash.lock().await.get_index());
     }
 }
 
@@ -164,6 +164,7 @@ async fn main(spawner: Spawner) {
     let usb_driver = usb::Driver::new(p.USBD, Irqs, usb::vbus_detect::HardwareVbusDetect::new(Irqs));
 
     let flash = FlashMemoryType::new(flash_spi_device, DummyPin::new_low(), DummyPin::new_low()).unwrap();
+    // flash.erase_all().await.expect("couldn't erase flash");
 
     let mut baro: bmp388::Bmp388<SpiDevice<'_, ThreadModeRawMutex, spim::Spim<'_, SPI2>, Output<'_>>> =
         bmp388::Bmp388::new(baro_spi_device, &mut Delay)
@@ -181,7 +182,12 @@ async fn main(spawner: Spawner) {
     baro.set_filter(bmp388::Filter::c1)
         .await
         .expect("set baro filter failed");
-
+    let power_control = bmp388::PowerControl {
+        mode: bmp388::PowerMode::Normal,
+        pressure_enable: true,
+        temperature_enable: true,
+    };
+    baro.set_power_control(power_control).await.expect("couldn't set power control");
     let mut acc = lis2dh12::Lis2dh12::new(acc_spi_device)
         .await
         .expect("couldn't initialize acc");

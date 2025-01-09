@@ -79,4 +79,17 @@ impl<const DIM: usize> Kalman<DIM> {
         self.x = x_p + k * y;
         self.p = (PMatrix::<DIM>::identity() - k * h) * p_p;
     }
+
+    pub fn insert_bypass<const MEAS_DIM: usize> (
+        &mut self,
+        z: &ZMatrix<DIM, MEAS_DIM>,
+        h: &HMatrix<DIM, MEAS_DIM>,
+        k: &KMatrix<DIM, MEAS_DIM>
+    ) {
+        // predict
+        let x_p: XMatrix<DIM> = self.a * self.x;
+        let y = z - (h * x_p);
+
+        self.x = x_p + k * y;
+    }
 }

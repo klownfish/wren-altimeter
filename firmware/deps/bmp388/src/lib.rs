@@ -176,6 +176,8 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
         let id = chip.id().await?;
         if id == CHIP_ID {
             chip.reset().await?;
+            delay.delay_ms(10).await;
+            chip.reset().await?;
             // without this the first few bytes of calib data could be incorrectly zero
             delay.delay_ms(10).await;
             chip.read_calibration().await?;
@@ -196,7 +198,6 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
 
         let mut new_data: [u8; 21] = [0; 21]; // bruh moment
         new_data.copy_from_slice(&data[2..]);
-
         self.temperature_calibration.update_calibration(new_data);
         self.pressure_calibration.update_calibration(new_data);
 
@@ -207,7 +208,6 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
     pub async fn sensor_values(&mut self) -> Result<SensorData, Bmp388Error<Spi::Error>> {
         let mut data: [u8; 8] = [Register::sensor_data as u8, 0, 0, 0, 0, 0, 0, 0];
         self.read_bytes(&mut data).await?;
-
         let uncompensated_press = (data[2] as u32) | (data[3] as u32) << 8 | (data[4] as u32) << 16;
         let uncompensated_temp = (data[5] as u32) | (data[6] as u32) << 8 | (data[7] as u32) << 16;
 
@@ -318,7 +318,11 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
 
     async fn write_register(&mut self, reg: Register, byte: u8) -> Result<(), Spi::Error> {
         let buf: [u8; 2] = [reg as u8, byte];
-        self.write_bytes(&buf).await
+        self.write_bytes(&buf).await?;
+        if self.read_register(reg).await? != byte {
+            error!("NOOOOOOO");
+        }
+        Ok(())
     }
 
     async fn read_register(&mut self, reg: Register) -> Result<u8, Spi::Error> {

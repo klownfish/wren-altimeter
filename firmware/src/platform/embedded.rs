@@ -28,7 +28,7 @@ impl Barometer<BarometerError> for BarometerType {
     async fn read_temp_and_pressure(&mut self) -> Result<BarometerData, BarometerError> {
         let val = self.sensor_values().await?;
         Ok(BarometerData {
-            pressure: val.pressure,
+            pressure: val.pressure / 100.0,
             temperature: val.temperature,
         })
     }
@@ -37,7 +37,12 @@ impl Barometer<BarometerError> for BarometerType {
 impl Accelerometer<AccelerometerError> for AccelerometerType {
     async fn read_acceleration(&mut self) -> Result<[f32; 3], AccelerometerError> {
         let res = self.accel_norm().await?;
-        Ok(res)
+        let g = 9.82;
+        Ok([
+            res[0] * g,
+            res[1] * g,
+            res[2] * g,
+        ])
     }
 }
 

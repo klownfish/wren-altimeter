@@ -22,6 +22,7 @@ enum MessageIds {
     Telemetry = 2,
     State = 3,
     PowerOn = 4,
+    Debug = 5,
 }
 
 impl FlashWriter {
@@ -69,6 +70,9 @@ impl FlashWriter {
     }
 
     pub async fn write(&mut self, buf: &[u8]) -> Result<(), ()> {
+        if self.index + buf.len() as u32 > self.get_size() {
+            return Ok(());
+        }
         self.flash.write(self.index, buf).await.unwrap();
         self.index += buf.len() as u32;
         Ok(())
@@ -76,8 +80,8 @@ impl FlashWriter {
 
     pub async fn write_telem(&mut self, altitude: f32, velocity: f32, acceleration: f32) {
         let alt_int: u16 = (altitude * 4.0) as u16;
-        let vel_int: u16 = (velocity * 100.0) as u16;
-        let accel_int: u16 = (acceleration * 200.0) as u16;
+        let vel_int: u16 = ((velocity + 100.0) * 100.0) as u16;
+        let accel_int: u16 = ((acceleration + 200.0) * 200.0) as u16;
 
         let alt_bytes = alt_int.to_le_bytes();
         let vel_bytes = vel_int.to_le_bytes();
@@ -114,4 +118,9 @@ impl FlashWriter {
         let buf = [MessageIds::PowerOn as u8];
         self.write(&buf).await.unwrap();
     }
+
+    pub async fn write_debug(&mut self, acc_x: f32, acc_y: f32, acc_z: f32, pressure: f32, time: Instant) {
+
+    }
+
 }
