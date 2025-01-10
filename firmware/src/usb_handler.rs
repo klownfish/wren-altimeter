@@ -9,6 +9,7 @@ use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::mutex::Mutex;
 use embassy_time::Instant;
 use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
+use embassy_usb::driver::EndpointError;
 use embassy_usb::{Builder, Config, UsbDevice};
 use static_cell::StaticCell;
 
@@ -18,21 +19,19 @@ use super::flash_writer::FlashWriter;
 async fn usb_driver_task(
     mut usb: UsbDevice<'static, embassy_nrf::usb::Driver<'static, peripherals::USBD, HardwareVbusDetect>>,
 ) {
-    loop {
-        usb.run().await;
-    }
+    usb.run().await;
 }
 
 #[embassy_executor::task]
 pub async fn usb_task(
     spawner: Spawner,
     driver: usb::Driver<'static, peripherals::USBD, HardwareVbusDetect>,
-    flash: &'static Mutex<ThreadModeRawMutex, FlashWriter>,
+    mut flash: &'static Mutex<ThreadModeRawMutex, FlashWriter>,
 ) {
     // Create embassy-usb Config
     let mut config = Config::new(0xc0de, 0xcafe);
-    config.manufacturer = Some("Embassy");
-    config.product = Some("USB-serial example");
+    config.manufacturer = Some("Klownfish");
+    config.product = Some("Wren-Altimeter");
     config.serial_number = Some("12345678");
     config.max_power = 100;
     config.max_packet_size_0 = 64;
@@ -64,37 +63,20 @@ pub async fn usb_task(
     let state = STATE.init(State::new());
 
     // Create classes on the builder.
-    let mut class = CdcAcmClass::new(&mut builder, state, 64);
+    let mut class = CdcAcmClass::new(&mut builder, state, 512);
 
     // Build the builder.
     let usb = builder.build();
 
     spawner.spawn(usb_driver_task(usb)).unwrap();
-    let mut rx_buf = [0_u8; 512];
-    let mut command_buf = [0_u8; 128];
-    let mut command_index: usize = 0;
+
+    info!("hello hello");
     loop {
+        info!("waiting for connection");
         class.wait_connection().await;
-        loop {
-            if let Ok(len) = class.read_packet(&mut rx_buf).await {
-                let slice = &mut rx_buf[0..len];
-                for c in slice {
-                    match c {
-                        b'\r' => continue,
-                        b'\n' => {
-                            handle_command(&mut class, &command_buf, command_index, flash).await;
-                            command_index = 0
-                        }
-                        _ => {
-                            command_buf[command_index] = *c;
-                            command_index += 1
-                        }
-                    }
-                }
-            } else {
-                break;
-            }
-        }
+        info!("got connection");
+        let _ = handle_usb_connection(&mut class, &mut flash).await;
+        info!("disconnected");
     }
 }
 
@@ -102,7 +84,7 @@ async fn handle_command<'a>(
     class: &mut CdcAcmClass<'a, usb::Driver<'a, peripherals::USBD, HardwareVbusDetect>>,
     buf: &[u8],
     length: usize,
-    flash: &'static Mutex<ThreadModeRawMutex, FlashWriter>,
+    flash: &'a Mutex<ThreadModeRawMutex, FlashWriter>,
 ) {
     let cmd = &buf[0..length];
 
@@ -110,10 +92,11 @@ async fn handle_command<'a>(
         b"read_flash" => {
             let mut str_buf: heapless::String<64> = Default::default();
             let mut flash = flash.lock().await;
-            write!(str_buf, "{{'length':{}}}", flash.get_index()).unwrap();
+            write!(str_buf, "{{\"length\":{}}}", flash.get_index()).unwrap();
             class.write_packet(str_buf.as_bytes()).await.unwrap();
+            embassy_time::Timer::after_millis(100).await;
             let mut read: u32 = 0;
-            let mut buf = [0_u8; 256];
+            let mut buf = [0_u8; 64];
             while read < flash.get_index() {
                 let to_read = (flash.get_index() - read).min(buf.len() as u32) as usize;
                 let slice = &mut buf[0..to_read];
@@ -128,22 +111,56 @@ async fn handle_command<'a>(
         }
 
         b"get_status" => {
+            info!("get status");
             let flash = flash.lock().await;
             let mut str_buf: heapless::String<128> = Default::default();
             write!(
                 str_buf,
-                "{{'used_flash':{}, 'flash_size':{}, 'time':{}, 'volt':{}}}",
+                "{{\"used_flash\":{}, \"flash_size\":{}, \"time\":{}, \"volt\":{}}}",
                 flash.get_index(),
                 flash.get_size(),
                 Instant::now().as_millis(),
                 3.8
             )
             .unwrap();
-            class.write_packet(str_buf.as_bytes()).await.unwrap();
+            if str_buf.as_bytes().len() > 64 {
+                class.write_packet(&str_buf.as_bytes()[0..64]).await.unwrap();
+                class.write_packet(&str_buf.as_bytes()[64..]).await.unwrap();
+            } else {
+                class.write_packet(&str_buf.as_bytes()).await.unwrap();
+            }
         }
 
         _ => {
             info!("invalid command");
+        }
+    }
+}
+
+async fn handle_usb_connection<'a>(
+    class: &mut CdcAcmClass<'a, usb::Driver<'a, peripherals::USBD, HardwareVbusDetect>>,
+    flash: &'a Mutex<ThreadModeRawMutex, FlashWriter>,
+) -> Result<(), EndpointError> {
+    let mut rx_buf = [0_u8; 512];
+    let mut command_buf = [0_u8; 128];
+    let mut command_index: usize = 0;
+    loop {
+        let len = class.read_packet(&mut rx_buf).await?;
+        info!("got packet");
+        let slice = &mut rx_buf[0..len];
+        for c in slice {
+            match c {
+                b'\r' => continue,
+                b'\n' => {
+                    info!("handling command");
+                    handle_command(class, &command_buf, command_index, flash).await;
+                    command_index = 0
+                }
+                _ => {
+                    command_buf[command_index] = *c;
+                    command_index += 1
+                }
+            }
         }
     }
 }

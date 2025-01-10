@@ -1,49 +1,41 @@
 #![cfg_attr(target_os = "none", no_std)]
 #![cfg_attr(target_os = "none", no_main)]
 
-
 #[allow(unused_imports)]
 #[cfg(target_os = "none")]
-use defmt::{debug, error, info, warn, trace};
-
-#[allow(unused_imports)]
-#[cfg(not(target_os = "none"))]
-use log::{debug, error, info, warn, trace};
-
-#[cfg(not(target_os = "none"))]
-use env_logger;
-
+use defmt::{debug, error, info, trace, warn};
+#[cfg(target_os = "none")]
+use dummy_pin::DummyPin;
 #[cfg(target_os = "none")]
 use embassy_embedded_hal::shared_bus::asynch::spi::SpiDevice;
+use embassy_executor::Spawner;
 #[cfg(target_os = "none")]
 use embassy_nrf::gpio::{Level, Output, OutputDrive};
 #[cfg(target_os = "none")]
 use embassy_nrf::peripherals::SPI2;
 #[cfg(target_os = "none")]
 use embassy_nrf::{bind_interrupts, peripherals, spim, usb};
-#[cfg(target_os = "none")]
-use {defmt_rtt as _, panic_probe as _};
-#[cfg(target_os = "none")]
-use dummy_pin::DummyPin;
-
-use embassy_executor::Spawner;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::mutex::Mutex;
-
-use embassy_time::{Delay, Instant, Timer};
+#[cfg(target_os = "none")]
+use embassy_time::Delay;
+use embassy_time::{Instant, Timer};
+#[cfg(not(target_os = "none"))]
+use env_logger;
 use flash_writer::FlashWriter;
 use flight_sm::{FlightSM, FlightState};
+#[allow(unused_imports)]
+#[cfg(not(target_os = "none"))]
+use log::{debug, error, info, trace, warn};
 use nalgebra::Vector3;
-use platform::{
-    Accelerometer, AccelerometerType, Barometer, BarometerType,
-    FlashMemoryType,
-};
+use platform::{Accelerometer, AccelerometerType, Barometer, BarometerType, FlashMemoryType};
 use static_cell::StaticCell;
+#[cfg(target_os = "none")]
+use {defmt_rtt as _, panic_probe as _};
 
 mod flash_writer;
 mod flight_sm;
 mod kalman;
-
 mod platform;
 
 #[cfg(target_os = "none")]
@@ -75,7 +67,7 @@ async fn flight_task(
     let mut cycle_count = 0_u32;
     loop {
         Timer::after_millis(20).await; // make this stable 50Hz
-        // get measurements
+                                       // get measurements
         let baro_reading = match baro.read_temp_and_pressure().await {
             Ok(val) => val,
             Err(_) => {
@@ -102,29 +94,68 @@ async fn flight_task(
         }
 
         let write_every = match flight_sm.get_state() {
-            FlightState::Boost => 1,
             FlightState::MaybeLaunched => 1,
+            FlightState::Boost => 1,
+            FlightState::Coast => 1,
+            FlightState::Descent => 10,
             FlightState::Idle => 50,
-            _ => 5,
         };
 
+        let mut flash = flash.lock().await;
+
         if cycle_count % write_every == 0 {
-            flash.lock().await.write_telem(flight_sm.get_relative_altitude(), flight_sm.get_vertical_velocity(), flight_sm.get_vertical_acceleration()).await;
-            info!("telemetry {} {} {}", flight_sm.get_relative_altitude(), flight_sm.get_vertical_velocity(), flight_sm.get_vertical_acceleration());
+            flash
+                .write_telem(
+                    flight_sm.get_relative_altitude(),
+                    flight_sm.get_vertical_velocity(),
+                    flight_sm.get_vertical_acceleration(),
+                )
+                .await;
+            info!(
+                "telemetry {} {} {}",
+                flight_sm.get_relative_altitude(),
+                flight_sm.get_vertical_velocity(),
+                flight_sm.get_vertical_acceleration()
+            );
+            info!("flash {}", flash.get_index());
         }
 
         if cycle_count % (write_every * 10) == 0 {
-            flash.lock().await.write_metadata(Instant::now(), 3.3).await;
+            flash.write_metadata(Instant::now(), 3.3).await;
         }
 
+        #[cfg(feature = "store_all")]
+        if flight_sm.get_state() != FlightState::Idle {
+            flash
+                .write_debug(
+                    acceleration[0],
+                    acceleration[1],
+                    acceleration[2],
+                    baro_reading.pressure,
+                    Instant::now(),
+                )
+                .await;
+        }
         if old_state != new_state {
             warn!("state changed {:?}", new_state);
-            flash.lock().await.write_state(new_state).await;
+            flash.write_state(new_state).await;
         }
 
-        trace!("debug {} {} {}", flight_sm.get_absolute_altitude(), flight_sm.get_vertical_velocity(), flight_sm.get_vertical_acceleration());
-        trace!("debug raw {} {} {} {}", baro_reading.pressure, acceleration[0], acceleration[1], acceleration[2]);
-        trace!("debug flash {}", flash.lock().await.get_index());
+        trace!(
+            "debug {:?} {} {} {}",
+            new_state,
+            flight_sm.get_absolute_altitude(),
+            flight_sm.get_vertical_velocity(),
+            flight_sm.get_vertical_acceleration()
+        );
+        trace!(
+            "debug raw {} {} {} {}",
+            baro_reading.pressure,
+            acceleration[0],
+            acceleration[1],
+            acceleration[2]
+        );
+        trace!("debug flash {}", flash.get_index());
     }
 }
 
@@ -166,10 +197,9 @@ async fn main(spawner: Spawner) {
     let flash = FlashMemoryType::new(flash_spi_device, DummyPin::new_low(), DummyPin::new_low()).unwrap();
     // flash.erase_all().await.expect("couldn't erase flash");
 
-    let mut baro: bmp388::Bmp388<SpiDevice<'_, ThreadModeRawMutex, spim::Spim<'_, SPI2>, Output<'_>>> =
-        bmp388::Bmp388::new(baro_spi_device, &mut Delay)
-            .await
-            .expect("initializing baro failed");
+    let mut baro: BarometerType = bmp388::Bmp388::new(baro_spi_device, &mut Delay)
+        .await
+        .expect("initializing baro failed");
     baro.set_oversampling(bmp388::config::OversamplingConfig {
         osr_pressure: bmp388::Oversampling::x8,
         osr_temperature: bmp388::Oversampling::x1,
@@ -179,39 +209,29 @@ async fn main(spawner: Spawner) {
     baro.set_sampling_rate(bmp388::SamplingRate::ms20)
         .await
         .expect("setting baro sample rate failed");
-    baro.set_filter(bmp388::Filter::c1)
-        .await
-        .expect("set baro filter failed");
+    baro.set_filter(bmp388::Filter::c1).await.expect("set baro filter failed");
     let power_control = bmp388::PowerControl {
         mode: bmp388::PowerMode::Normal,
         pressure_enable: true,
         temperature_enable: true,
     };
     baro.set_power_control(power_control).await.expect("couldn't set power control");
-    let mut acc = lis2dh12::Lis2dh12::new(acc_spi_device)
-        .await
-        .expect("couldn't initialize acc");
+    let mut acc = lis2dh12::Lis2dh12::new(acc_spi_device).await.expect("couldn't initialize acc");
     acc.set_bdu(true).await.expect("coudln't set bdu");
     acc.enabled_adcs().await.expect("coudln't enable adc");
     acc.enable_temp(true).await.expect("couldn't enable temp");
-    acc.enable_axis((true, true, true))
-        .await
-        .expect("couldn't set acc axis");
+    acc.enable_axis((true, true, true)).await.expect("couldn't set acc axis");
     acc.set_mode(lis2dh12::Mode::HighResolution)
         .await
         .expect("couldn't set acc mode");
-    acc.set_fs(lis2dh12::FullScale::G16)
-        .await
-        .expect("couldn't set acc scale");
+    acc.set_fs(lis2dh12::FullScale::G16).await.expect("couldn't set acc scale");
     acc.set_odr(lis2dh12::Odr::Hz100).await.expect("couldn't set acc ODR");
 
     static FLASH: StaticCell<Mutex<ThreadModeRawMutex, FlashWriter>> = StaticCell::new();
     let flash = FLASH.init(Mutex::new(FlashWriter::new(flash).await.unwrap()));
 
     spawner.spawn(flight_task(baro, acc, flash)).unwrap();
-    spawner
-        .spawn(usb_handler::usb_task(spawner, usb_driver, flash))
-        .unwrap();
+    spawner.spawn(usb_handler::usb_task(spawner, usb_driver, flash)).unwrap();
     loop {
         led_pin.toggle();
         Timer::after_millis(500).await;
