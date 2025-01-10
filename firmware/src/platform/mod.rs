@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 #[cfg(target_os = "none")]
 mod embedded;
 #[cfg(target_os = "none")]
@@ -25,9 +27,4 @@ pub trait Barometer<E> {
 
 pub trait Accelerometer<E> {
     async fn read_acceleration(&mut self) -> Result<[f32; 3], E>;
-}
-
-pub trait UsbSerial<E> {
-    async fn write(&mut self, data: &[u8]) -> Result<(), E>;
-    async fn read(&self, buffer: &mut [u8]) -> Result<(), E>;
 }

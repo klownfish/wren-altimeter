@@ -1,12 +1,10 @@
 #[allow(unused_imports)]
 #[cfg(target_os = "none")]
 use defmt::{debug, error, info, warn};
-
+use embassy_time::Instant;
 #[allow(unused_imports)]
 #[cfg(not(target_os = "none"))]
 use log::{debug, error, info, warn};
-
-use embassy_time::Instant;
 
 use super::flight_sm::FlightState;
 use super::platform::{FlashMemory, FlashMemoryType};
@@ -52,8 +50,10 @@ impl FlashWriter {
         Ok(out)
     }
 
+    #[allow(unused)]
     pub async fn erase(&mut self) {
         self.flash.erase_all().await.unwrap();
+        self.index = 0;
     }
 
     pub fn get_index(&self) -> u32 {
@@ -64,6 +64,7 @@ impl FlashWriter {
         FlashMemoryType::get_capacity()
     }
 
+    #[allow(unused)]
     pub async fn read(&mut self, address: u32, buf: &mut [u8]) -> Result<(), ()> {
         self.flash.read(address, buf).await.unwrap();
         Ok(())
@@ -119,8 +120,15 @@ impl FlashWriter {
         self.write(&buf).await.unwrap();
     }
 
-    pub async fn write_debug(&mut self, acc_x: f32, acc_y: f32, acc_z: f32, pressure: f32, time: Instant) {
-
+    #[allow(unused)]
+    pub async fn write_debug(&mut self, acc_x: f32, acc_y: f32, acc_z: f32, pressure: f64, time: Instant) {
+        let mut buf = [0_u8; 25];
+        buf[0] = MessageIds::Debug as u8;
+        buf[1..5].copy_from_slice(&(time.as_millis() as u32).to_ne_bytes());
+        buf[5..9].copy_from_slice(&acc_x.to_ne_bytes());
+        buf[9..13].copy_from_slice(&acc_y.to_ne_bytes());
+        buf[13..17].copy_from_slice(&acc_z.to_ne_bytes());
+        buf[17..25].copy_from_slice(&pressure.to_ne_bytes());
+        self.write(&buf).await.unwrap();
     }
-
 }

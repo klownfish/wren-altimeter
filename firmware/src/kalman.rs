@@ -1,7 +1,6 @@
 #[allow(unused_imports)]
 #[cfg(target_os = "none")]
 use defmt::{debug, error, info, warn};
-
 #[allow(unused_imports)]
 #[cfg(not(target_os = "none"))]
 use log::{debug, error, info, warn};
@@ -80,11 +79,12 @@ impl<const DIM: usize> Kalman<DIM> {
         self.p = (PMatrix::<DIM>::identity() - k * h) * p_p;
     }
 
-    pub fn insert_bypass<const MEAS_DIM: usize> (
+    #[allow(unused)]
+    pub fn insert_bypass<const MEAS_DIM: usize>(
         &mut self,
         z: &ZMatrix<DIM, MEAS_DIM>,
         h: &HMatrix<DIM, MEAS_DIM>,
-        k: &KMatrix<DIM, MEAS_DIM>
+        k: &KMatrix<DIM, MEAS_DIM>,
     ) {
         // predict
         let x_p: XMatrix<DIM> = self.a * self.x;

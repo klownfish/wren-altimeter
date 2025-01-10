@@ -1,14 +1,17 @@
 #![allow(dead_code)]
 
+use core::fmt::{self, Display};
+
 #[allow(unused_imports)]
 #[cfg(target_os = "none")]
 use defmt::{debug, error, info, warn};
-
+use embassy_time::Instant;
 #[allow(unused_imports)]
 #[cfg(not(target_os = "none"))]
 use log::{debug, error, info, warn};
-use embassy_time::Instant;
-use nalgebra::{ComplexField, Normed, Quaternion, RealField, UnitQuaternion, Vector3};
+#[cfg(target_os = "none")]
+use nalgebra::{ComplexField, RealField};
+use nalgebra::{Quaternion, UnitQuaternion, Vector3};
 
 use crate::kalman::{self, Kalman};
 
@@ -21,7 +24,18 @@ pub enum FlightState {
     Boost = 2,
     Coast = 3,
     Descent = 4,
-    MaybeLanded = 5,
+}
+
+impl Display for FlightState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FlightState::Idle => write!(f, "Idle"),
+            FlightState::MaybeLaunched => write!(f, "Maybe Launched"),
+            FlightState::Boost => write!(f, "Boost"),
+            FlightState::Coast => write!(f, "Coast"),
+            FlightState::Descent => write!(f, "Descent"),
+        }
+    }
 }
 
 pub struct FlightSM {
@@ -32,17 +46,18 @@ pub struct FlightSM {
     last_state_transition: Instant,
     ground_level: f32,
     last_altitude: f32,
+    descent_counter: u16,
 }
 
 fn pressure_to_altitude(pressure: f64) -> f32 {
     // ISA constants
-    const P0: f64 = 1013.250;   // Sea-level pressure in hPa
-    const T0: f64 = 288.15;     // Sea-level temperature in K
-    const L: f64 = 0.0065;      // Temperature lapse rate in K/m
-    const g: f64 = 9.81;        // Gravitational acceleration constant in m/s^2
-    const R: f64 = 287.05;      // Specific gas constant for dry air in J/(kg·K)
+    const P0: f64 = 1013.250; // Sea-level pressure in hPa
+    const T0: f64 = 288.15; // Sea-level temperature in K
+    const L: f64 = 0.0065; // Temperature lapse rate in K/m
+    const G: f64 = 9.81; // Gravitational acceleration constant in m/s^2
+    const R: f64 = 287.05; // Specific gas constant for dry air in J/(kg·K)
 
-    let altitude = (T0 / L) * (1.0 - (pressure / P0).powf(R * L / g));
+    let altitude = (T0 / L) * (1.0 - (pressure / P0).powf(R * L / G));
     altitude as f32
 }
 
@@ -50,20 +65,12 @@ impl FlightSM {
     // measurement noise
     const SIGMA_MEASUREMENT_ACCELERATION_ASCENT: f32 = 0.001;
     const SIGMA_MEASUREMENT_ALTITUDE_ASCENT: f32 = 1.0;
-    const SIGMA_MEASUREMENT_ALTITUDE_DESCENT: f32 = 1.0;
+    const SIGMA_MEASUREMENT_ALTITUDE_DESCENT: f32 = 30.0;
 
     // process noise
     const SIGMA_PROCESS_ACCELLERATION: f32 = 1.0;
     const SIGMA_PROCESS_VELOCITY: f32 = 0.01;
     const SIGMA_PROCESS_ALTITUDE: f32 = 0.001;
-
-    const K_BAROMETER_ALTITUDE_ASCENT: f32 = 0.8;
-    const K_BAROMETER_VELOCITY_ASCENT: f32 = 0.1;
-    const K_BAROMETER_ACCELERATION_ASCENT: f32 = 0.01;
-
-    const K_ACCELEROMTER_ALTITUDE: f32 = 0.1;
-    const K_ACCELEROMETER_VELOCITY: f32 = 0.6;
-    const K_ACCELEROMETER_ACCELERATION: f32 = 0.9;
 
     const BAROMETER_LP_DESCENT: f32 = 0.2;
 
@@ -91,6 +98,7 @@ impl FlightSM {
             last_state_transition: Instant::now(),
             ground_level: 0.0,
             last_altitude: 0.0,
+            descent_counter: 0,
         }
     }
 
@@ -102,8 +110,9 @@ impl FlightSM {
         let new_altitude: f32 = pressure_to_altitude(pressure);
         let altitude: f32;
 
-        if self.state == FlightState::Descent || self.state == FlightState::MaybeLanded {
-            altitude = new_altitude * Self::BAROMETER_LP_DESCENT + self.last_altitude * (1.0 - Self::BAROMETER_LP_DESCENT);
+        if self.state == FlightState::Descent {
+            altitude =
+                new_altitude * Self::BAROMETER_LP_DESCENT + self.last_altitude * (1.0 - Self::BAROMETER_LP_DESCENT);
         } else {
             altitude = new_altitude;
         }
@@ -114,18 +123,25 @@ impl FlightSM {
         if accel_norm < Self::GRAVITY_UPPER_THRESHOLD && accel_norm > Self::GRAVITY_LOWER_THRESHOLD {
             let new_imu_orientation = Self::calc_imu_orientation_correction(acceleration);
             self.imu_orientation = self.imu_orientation.slerp(&new_imu_orientation, Self::IMU_ORIENTATION_LP);
+            // wtf why does cargo fmt do it like this. I am literally going to vomit
         }
         let rotated_acceleration: Vector3<f32> = self.imu_orientation * acceleration;
         let vertical_acceleration: f32 = rotated_acceleration.z - Self::GRAVITY; // TODO use norm but find sign
-        // let vertical_acceleration: f32 = accel_norm - Self::GRAVITY;
+                                                                                 // let vertical_acceleration: f32 = accel_norm - Self::GRAVITY;
 
         // prepare kalman process
-        let a = kalman::AMatrix::<3>::new(1.0, dt, dt * dt / 2.0, 0.0, 1.0, dt, 0.0, 0.0, 1.0);
+        #[rustfmt::skip]
+        let a = kalman::AMatrix::<3>::new(
+            1.0, dt, dt * dt / 2.0,
+            0.0, 1.0, dt,
+             0.0, 0.0, 1.0
+        );
 
+        #[rustfmt::skip]
         let q = kalman::QMatrix::<3>::new(
             Self::SIGMA_PROCESS_ALTITUDE, 0.0, 0.0,
             0.0, Self::SIGMA_PROCESS_VELOCITY, 0.0,
-            0.0, 0.0, Self::SIGMA_PROCESS_ACCELLERATION
+            0.0, 0.0, Self::SIGMA_PROCESS_ACCELLERATION,
         );
 
         self.kalman.set_process(&q, &a);
@@ -135,18 +151,24 @@ impl FlightSM {
         // descent phase -> only baro
         // close to sonic -> only accel
         // otherwise both
-        if self.state == FlightState::Descent || self.state == FlightState::MaybeLanded {
+        if self.state == FlightState::Descent {
             let h = kalman::HMatrix::<3, 1>::new(1.0, 0.0, 0.0);
             let z = kalman::ZMatrix::<3, 1>::new(altitude);
             let r = kalman::RMatrix::<3, 1>::new(Self::SIGMA_MEASUREMENT_ALTITUDE_DESCENT);
             self.kalman.insert_measurement(&z, &r, &h);
-        } else if Self::SONIC_SHOCK_LOWER_THRESHOLD < self.get_vertical_velocity() && self.get_vertical_velocity() < Self::SONIC_SHOCK_UPPER_THRESHOLD {
+        } else if Self::SONIC_SHOCK_LOWER_THRESHOLD < self.get_vertical_velocity()
+            && self.get_vertical_velocity() < Self::SONIC_SHOCK_UPPER_THRESHOLD
+        {
             let h = kalman::HMatrix::<3, 1>::new(0.0, 0.0, 1.0);
             let z = kalman::ZMatrix::<3, 1>::new(vertical_acceleration);
             let r = kalman::RMatrix::<3, 1>::new(Self::SIGMA_MEASUREMENT_ACCELERATION_ASCENT);
             self.kalman.insert_measurement(&z, &r, &h);
         } else {
-            let h = kalman::HMatrix::<3, 2>::new(1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+            #[rustfmt::skip]
+            let h = kalman::HMatrix::<3, 2>::new(
+                1.0, 0.0, 0.0,
+                0.0, 0.0, 1.0
+            );
             let z = kalman::ZMatrix::<3, 2>::new(altitude, vertical_acceleration);
             let r = kalman::RMatrix::<3, 2>::new(
                 Self::SIGMA_MEASUREMENT_ALTITUDE_ASCENT,
@@ -156,29 +178,6 @@ impl FlightSM {
             );
             self.kalman.insert_measurement(&z, &r, &h);
         }
-
-
-        // if self.state == FlightState::Descent || self.state == FlightState::MaybeLanded {
-        //     let h = kalman::HMatrix::<3, 1>::new(1.0, 0.0, 0.0);
-        //     let z = kalman::ZMatrix::<3, 1>::new(altitude);
-        //     let k = kalman::KMatrix::<3, 1>::new(Self::K_BAROMETER_ALTITUDE_ASCENT, Self::K_BAROMETER_VELOCITY_ASCENT, Self::K_BAROMETER_ACCELERATION_ASCENT);
-        //     self.kalman.insert_bypass(&z, &h, &k);
-        // } else if Self::SONIC_SHOCK_LOWER_THRESHOLD < self.get_vertical_velocity() && self.get_vertical_velocity() < Self::SONIC_SHOCK_UPPER_THRESHOLD {
-        //     let h = kalman::HMatrix::<3, 1>::new(1.0, 0.0, 0.0);
-        //     let z = kalman::ZMatrix::<3, 1>::new(vertical_acceleration);
-        //     let k = kalman::KMatrix::<3, 1>::new(Self::K_ACCELEROMTER_ALTITUDE, Self::K_ACCELEROMETER_VELOCITY, Self::K_ACCELEROMETER_ACCELERATION);
-        //     self.kalman.insert_bypass(&z, &h, &k);
-        // } else {
-        //     let h = kalman::HMatrix::<3, 2>::new(1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-        //     let z = kalman::ZMatrix::<3, 2>::new(altitude, vertical_acceleration);
-        //     let k = kalman::KMatrix::<3, 2>::new(
-        //         Self::K_BAROMETER_ALTITUDE_ASCENT, Self::K_ACCELEROMTER_ALTITUDE,
-        //         Self::K_BAROMETER_VELOCITY_ASCENT, Self::K_ACCELEROMETER_VELOCITY,
-        //         Self::K_BAROMETER_ACCELERATION_ASCENT, Self::K_ACCELEROMETER_ACCELERATION
-        //     );
-        //     self.kalman.insert_bypass(&z, &h, &k);
-        // }
-
 
         // let the kalman filter stabilize
         if Instant::now().as_millis() < 10000 {
@@ -215,22 +214,20 @@ impl FlightSM {
             FlightState::Coast => {
                 if self.get_vertical_velocity() < 0.0 {
                     self.state = FlightState::Descent;
+                    self.descent_counter = 0;
                 }
             }
 
             FlightState::Descent => {
                 let in_state_for: f32 =
                     Instant::now().duration_since(self.last_state_transition).as_millis() as f32 / 1000.0;
-                if in_state_for > Self::DESCENT_HOLDOFF && self.get_vertical_velocity() > 0.0 {
-                    self.state = FlightState::MaybeLanded;
-                }
-            }
-
-            FlightState::MaybeLanded => {
-                let in_state_for: f32 =
-                    Instant::now().duration_since(self.last_state_transition).as_millis() as f32 / 1000.0;
-                if in_state_for > 10_000.0 && self.get_vertical_velocity().abs() < 5.0 {
-                    self.state = FlightState::Idle;
+                if in_state_for > Self::DESCENT_HOLDOFF && self.get_vertical_velocity().abs() < 1.0 {
+                    self.descent_counter += 1;
+                    if self.descent_counter > 250 {
+                        self.state = FlightState::Idle;
+                    }
+                } else {
+                    self.descent_counter = 0;
                 }
             }
         }
@@ -260,30 +257,13 @@ impl FlightSM {
         self.kalman.get_state()[2]
     }
 
-    // noise from acceleration is the dominating factor. We can extrapolate the rest from that
-    // TODO think really hard about this
-    // fn calc_q_matrix(dt: f32, sigma_accel: f32) -> kalman::QMatrix<3> {
-    //     let q = kalman::QMatrix::<3>::new(
-    //         dt.powi(4) / 4.0,
-    //         dt.powi(3) / 2.0,
-    //         dt.powi(2) / 2.0,
-    //         dt.powi(3) / 2.0,
-    //         dt.powi(2),
-    //         dt,
-    //         dt.powi(2) / 2.0,
-    //         dt,
-    //         1.0,
-    //     );
-    //     q * sigma_accel
-    // }
-
     fn calc_imu_orientation_correction(measured: Vector3<f32>) -> UnitQuaternion<f32> {
         // Normalize the measured vector
         let mut measured_vector = measured.normalize();
         // Calculate rotation around x-axis
         let x_rot_angle = measured_vector.y.atan2(measured_vector.z) / 2.0;
-        let x_rot_quat = UnitQuaternion::from_quaternion(Quaternion::new(
-            x_rot_angle.cos(), x_rot_angle.sin(), 0.0, 0.0));
+        let x_rot_quat =
+            UnitQuaternion::from_quaternion(Quaternion::new(x_rot_angle.cos(), x_rot_angle.sin(), 0.0, 0.0));
 
         // Apply x-axis rotation to the measured vector and normalize
         measured_vector = x_rot_quat * measured_vector;
@@ -291,8 +271,8 @@ impl FlightSM {
 
         // Calculate rotation around y-axis
         let y_rot_angle = -measured_vector.x.atan2(measured_vector.z) / 2.0;
-        let y_rot_quat = UnitQuaternion::from_quaternion(Quaternion::new(
-            y_rot_angle.cos(), 0.0, y_rot_angle.sin(), 0.0));
+        let y_rot_quat =
+            UnitQuaternion::from_quaternion(Quaternion::new(y_rot_angle.cos(), 0.0, y_rot_angle.sin(), 0.0));
 
         // Combine the rotations to get the final orientation
         let result = y_rot_quat * x_rot_quat;

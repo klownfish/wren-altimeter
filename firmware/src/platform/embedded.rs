@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use core::convert::Infallible;
 
 use bmp388::{Bmp388, Bmp388Error};
@@ -38,11 +40,7 @@ impl Accelerometer<AccelerometerError> for AccelerometerType {
     async fn read_acceleration(&mut self) -> Result<[f32; 3], AccelerometerError> {
         let res = self.accel_norm().await?;
         let g = 9.82;
-        Ok([
-            res[0] * g,
-            res[1] * g,
-            res[2] * g,
-        ])
+        Ok([res[0] * g, res[1] * g, res[2] * g])
     }
 }
 

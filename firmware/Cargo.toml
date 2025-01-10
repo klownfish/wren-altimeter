@@ -3,6 +3,9 @@ edition = "2021"
 name = "wren"
 version = "0.1.0"
 
+[features]
+store_all = []
+
 # embedded dependencies
 [target.'cfg(target_os = "none")'.dependencies]
 embassy-nrf = { version = "0.2.0", features = ["defmt", "nrf52833", "time-driver-rtc1", "gpiote", "nfc-pins-as-gpio", "time", "unstable-pac"] }

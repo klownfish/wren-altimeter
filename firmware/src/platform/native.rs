@@ -1,18 +1,17 @@
-use std::fs::File;
-use std::path::Path;
-use std::io::{self, BufRead};
+#![allow(dead_code)]
+
 use std::convert::Infallible;
 use std::env;
-use std::io::Write;
-
-#[allow(unused_imports)]
-use log::{info, warn, error, debug};
-
-use embassy_time::Instant;
+use std::fs::File;
+use std::io::{self, BufRead, Write};
+use std::path::Path;
 
 use bmp388::Bmp388Error;
+use embassy_time::Instant;
 use lis2dh12::Lis2dh12Error;
-use w25q32jv::{Error as W25q32jvError};
+#[allow(unused_imports)]
+use log::{debug, error, info, warn};
+use w25q32jv::Error as W25q32jvError;
 
 use super::{Accelerometer, Barometer, BarometerData, FlashMemory};
 
@@ -25,15 +24,15 @@ pub type FlashMemoryType = MockFlashMemory;
 pub type FlashMemoryError = W25q32jvError<Infallible, Infallible>;
 
 pub struct MockBarometer {
-    data: Vec<(f64, f64)>
+    data: Vec<(f64, f64)>,
 }
 
 pub struct MockAccelerometer {
-    data: Vec<(f64, [f64; 3])>
+    data: Vec<(f64, [f64; 3])>,
 }
 
 pub struct MockFlashMemory {
-    file: File
+    file: File,
 }
 
 impl MockBarometer {
@@ -41,7 +40,7 @@ impl MockBarometer {
         let source_file = file!(); // Gets the current file name (relative to the crate root)
         let source_dir = Path::new(source_file).parent().unwrap(); // Gets the directory of the source file
         let data_path = source_dir.join("data/skyward_baro.csv");
-        let mut file = File::open(&data_path).unwrap();
+        let file = File::open(&data_path).unwrap();
 
         let reader = io::BufReader::new(file);
 
@@ -63,9 +62,7 @@ impl MockBarometer {
             }
         }
 
-        Self {
-            data: data
-        }
+        Self { data: data }
     }
 }
 
@@ -94,10 +91,7 @@ impl MockAccelerometer {
             data.push((time, [acc_x, acc_y, acc_z]));
         }
 
-
-        Self {
-            data: data
-        }
+        Self { data: data }
     }
 }
 
@@ -106,14 +100,12 @@ impl MockFlashMemory {
         let tmp_dir = env::temp_dir();
         let path = tmp_dir.join("wren_flash.bin");
 
-        let mut file = match File::create(&path) {
+        let file = match File::create(&path) {
             Err(why) => panic!("couldn't create flash file {}", why),
             Ok(file) => file,
         };
 
-        Self {
-            file: file
-        }
+        Self { file: file }
     }
 }
 
@@ -125,7 +117,7 @@ impl Barometer<BarometerError> for BarometerType {
                 return Ok(BarometerData {
                     pressure: *pressure / 100.0,
                     temperature: 22.0,
-                })
+                });
             }
         }
 
@@ -141,29 +133,23 @@ impl Accelerometer<AccelerometerError> for AccelerometerType {
         let now = Instant::now().as_millis() as f64 / 1000.0 - 15.0;
         for (time, val) in &self.data {
             if *time > now {
-                return Ok([
-                    val[0] as f32,
-                    val[1] as f32,
-                    val[2] as f32,
-                ])
+                return Ok([val[0] as f32, val[1] as f32, val[2] as f32]);
             }
         }
         let val = self.data[self.data.len() - 1].1;
-        Ok([
-            val[0] as f32,
-            val[1] as f32,
-            val[2] as f32,
-        ])
+        Ok([val[0] as f32, val[1] as f32, val[2] as f32])
     }
 }
 
 impl FlashMemory<FlashMemoryError> for FlashMemoryType {
     async fn read(&mut self, address: u32, buffer: &mut [u8]) -> Result<(), FlashMemoryError> {
+        let _ = address;
         buffer.fill(0xff);
         Ok(())
     }
 
     async fn write(&mut self, address: u32, data: &[u8]) -> Result<(), FlashMemoryError> {
+        let _ = address;
         self.file.write_all(data).unwrap();
         Ok(())
     }
@@ -173,6 +159,6 @@ impl FlashMemory<FlashMemoryError> for FlashMemoryType {
     }
 
     fn get_capacity() -> u32 {
-        return 50000 as u32;
+        return 524288 as u32;
     }
 }
