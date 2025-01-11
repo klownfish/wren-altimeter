@@ -7,7 +7,7 @@ Wren is a compact altimeter capable of fitting in a standard 18mm model rocket. 
 
 
 ## Hardware
-A 12mm x 34mm 4 layer PCB, designed to only use components from JLCPCB's stock. Single sided assembly with only a debug connector and battery pads (and branding of course ;) ) on the back.
+A 12mm x 34mm 4 layer PCB, designed to only use components from JLCPCB's stock. Single sided assembly with only a debug connector and battery pads on the back.
 
 1. **MCU:** An nRF52833, small package, USB PHY and incredibly low power.
 
@@ -24,3 +24,10 @@ A 12mm x 34mm 4 layer PCB, designed to only use components from JLCPCB's stock. 
 
 ## Software
 The onboard firmware is being developed using Rust with the Embassy framework. The dashboard is written in Python
+
+### build
+To flash and build run
+`cargo run`
+
+To run the native test build with mock drivers run
+`cargo run --target x86_64-unknown-linux-gnu` or any arch with std
