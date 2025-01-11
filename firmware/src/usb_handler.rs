@@ -13,7 +13,8 @@ use embassy_usb::driver::EndpointError;
 use embassy_usb::{Builder, Config, UsbDevice};
 use static_cell::StaticCell;
 
-use super::flash_writer::FlashWriter;
+use crate::flash_writer::FlashWriter;
+use crate::WrenState;
 
 #[embassy_executor::task]
 async fn usb_driver_task(
@@ -26,9 +27,9 @@ async fn usb_driver_task(
 pub async fn usb_task(
     spawner: Spawner,
     driver: usb::Driver<'static, peripherals::USBD, HardwareVbusDetect>,
-    mut flash: &'static Mutex<ThreadModeRawMutex, FlashWriter>,
+    flash: &'static Mutex<ThreadModeRawMutex, FlashWriter>,
+    wren: &'static Mutex<ThreadModeRawMutex, WrenState>,
 ) {
-    // Create embassy-usb Config
     let mut config = Config::new(0xc0de, 0xcafe);
     config.manufacturer = Some("Klownfish");
     config.product = Some("Wren-Altimeter");
@@ -75,7 +76,7 @@ pub async fn usb_task(
         info!("waiting for connection");
         class.wait_connection().await;
         info!("got connection");
-        let _ = handle_usb_connection(&mut class, &mut flash).await;
+        let _ = handle_usb_connection(&mut class, flash, wren).await;
         info!("disconnected");
     }
 }
@@ -85,6 +86,7 @@ async fn handle_command<'a>(
     buf: &[u8],
     length: usize,
     flash: &'a Mutex<ThreadModeRawMutex, FlashWriter>,
+    wren: &'static Mutex<ThreadModeRawMutex, WrenState>,
 ) {
     let cmd = &buf[0..length];
 
@@ -112,15 +114,31 @@ async fn handle_command<'a>(
 
         b"get_status" => {
             info!("get status");
-            let flash = flash.lock().await;
+            let flash_index;
+            let flash_size;
+            let wren_volt;
+            let wren_altitude;
+            let wren_acceleration;
+            {
+                let flash = flash.lock().await;
+                flash_index = flash.get_index();
+                flash_size = flash.get_size();
+                let wren = wren.lock().await;
+                wren_volt = wren.battery_voltage;
+                wren_altitude = wren.altitude;
+                wren_acceleration = wren.acceleration;
+            }
+
             let mut str_buf: heapless::String<128> = Default::default();
             write!(
                 str_buf,
-                "{{\"used_flash\":{}, \"flash_size\":{}, \"time\":{}, \"volt\":{}}}",
-                flash.get_index(),
-                flash.get_size(),
+                "{{\"used_flash\":{}, \"flash_size\":{}, \"time\":{}, \"volt\":{}, \"altitude\":{},\"acceleration\":{}}}",
+                flash_index,
+                flash_size,
                 Instant::now().as_millis(),
-                3.8
+                wren_volt,
+                wren_altitude,
+                wren_acceleration,
             )
             .unwrap();
             if str_buf.as_bytes().len() > 64 {
@@ -140,6 +158,7 @@ async fn handle_command<'a>(
 async fn handle_usb_connection<'a>(
     class: &mut CdcAcmClass<'a, usb::Driver<'a, peripherals::USBD, HardwareVbusDetect>>,
     flash: &'a Mutex<ThreadModeRawMutex, FlashWriter>,
+    wren: &'static Mutex<ThreadModeRawMutex, WrenState>,
 ) -> Result<(), EndpointError> {
     let mut rx_buf = [0_u8; 512];
     let mut command_buf = [0_u8; 128];
@@ -153,7 +172,7 @@ async fn handle_usb_connection<'a>(
                 b'\r' => continue,
                 b'\n' => {
                     info!("handling command");
-                    handle_command(class, &command_buf, command_index, flash).await;
+                    handle_command(class, &command_buf, command_index, flash, wren).await;
                     command_index = 0
                 }
                 _ => {

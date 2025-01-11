@@ -5,13 +5,13 @@ use core::fmt::{self, Display};
 #[allow(unused_imports)]
 #[cfg(target_os = "none")]
 use defmt::{debug, error, info, warn};
-use embassy_time::Instant;
 #[allow(unused_imports)]
 #[cfg(not(target_os = "none"))]
 use log::{debug, error, info, warn};
 #[cfg(target_os = "none")]
 use nalgebra::{ComplexField, RealField};
 use nalgebra::{Quaternion, UnitQuaternion, Vector3};
+use embassy_time::Instant;
 
 use crate::kalman::{self, Kalman};
 
@@ -47,6 +47,7 @@ pub struct FlightSM {
     ground_level: f32,
     last_altitude: f32,
     descent_counter: u16,
+    raw_acceleration: f32,
 }
 
 fn pressure_to_altitude(pressure: f64) -> f32 {
@@ -99,6 +100,7 @@ impl FlightSM {
             ground_level: 0.0,
             last_altitude: 0.0,
             descent_counter: 0,
+            raw_acceleration: 0.0,
         }
     }
 
@@ -117,12 +119,14 @@ impl FlightSM {
             altitude = new_altitude;
         }
         self.last_altitude = altitude;
-
         // accel stuff
         let accel_norm = acceleration.norm();
+        self.raw_acceleration = accel_norm;
         if accel_norm < Self::GRAVITY_UPPER_THRESHOLD && accel_norm > Self::GRAVITY_LOWER_THRESHOLD {
             let new_imu_orientation = Self::calc_imu_orientation_correction(acceleration);
-            self.imu_orientation = self.imu_orientation.slerp(&new_imu_orientation, Self::IMU_ORIENTATION_LP);
+            self.imu_orientation = self
+                .imu_orientation
+                .slerp(&new_imu_orientation, Self::IMU_ORIENTATION_LP);
             // wtf why does cargo fmt do it like this. I am literally going to vomit
         }
         let rotated_acceleration: Vector3<f32> = self.imu_orientation * acceleration;
@@ -255,6 +259,10 @@ impl FlightSM {
 
     pub fn get_vertical_acceleration(&self) -> f32 {
         self.kalman.get_state()[2]
+    }
+
+    pub fn get_raw_acceleration(&self) -> f32 {
+        self.raw_acceleration
     }
 
     fn calc_imu_orientation_correction(measured: Vector3<f32>) -> UnitQuaternion<f32> {

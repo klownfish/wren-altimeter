@@ -14,150 +14,53 @@ use embassy_nrf::gpio::{Level, Output, OutputDrive};
 #[cfg(target_os = "none")]
 use embassy_nrf::peripherals::SPI2;
 #[cfg(target_os = "none")]
+use embassy_nrf::saadc;
+#[cfg(target_os = "none")]
 use embassy_nrf::{bind_interrupts, peripherals, spim, usb};
-use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
-use embassy_sync::mutex::Mutex;
 #[cfg(target_os = "none")]
 use embassy_time::Delay;
-use embassy_time::{Instant, Timer};
-#[cfg(not(target_os = "none"))]
-use env_logger;
-use flash_writer::FlashWriter;
-use flight_sm::{FlightSM, FlightState};
-#[allow(unused_imports)]
-#[cfg(not(target_os = "none"))]
-use log::{debug, error, info, trace, warn};
-use nalgebra::Vector3;
-use platform::{Accelerometer, AccelerometerType, Barometer, BarometerType, FlashMemoryType};
-use static_cell::StaticCell;
+#[cfg(target_os = "none")]
+use libm::powf;
 #[cfg(target_os = "none")]
 use {defmt_rtt as _, panic_probe as _};
 
+#[allow(unused_imports)]
+#[cfg(not(target_os = "none"))]
+use log::{debug, error, info, trace, warn};
+#[cfg(not(target_os = "none"))]
+use env_logger;
+
+use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
+use embassy_sync::mutex::Mutex;
+use embassy_time::Timer;
+use flash_writer::FlashWriter;
+use platform::{AccelerometerType, BarometerType, FlashMemoryType};
+use static_cell::StaticCell;
+
+
 mod flash_writer;
 mod flight_sm;
+mod flight_task;
 mod kalman;
 mod platform;
 
 #[cfg(target_os = "none")]
 mod usb_handler;
 
+#[allow(unused)]
+struct WrenState {
+    battery_voltage: f32,
+    acceleration: f32,
+    altitude: f32,
+}
+
 #[cfg(target_os = "none")]
 bind_interrupts!(struct Irqs {
     USBD => usb::InterruptHandler<peripherals::USBD>;
     SPI2 => spim::InterruptHandler<SPI2>;
     CLOCK_POWER => usb::vbus_detect::InterruptHandler;
+    SAADC => saadc::InterruptHandler;
 });
-
-#[embassy_executor::task]
-async fn flight_task(
-    mut baro: BarometerType,
-    mut acc: AccelerometerType,
-    flash: &'static Mutex<ThreadModeRawMutex, flash_writer::FlashWriter>,
-) -> ! {
-    // write multiple times to guarante a proper sync if the previous state is corrupt
-    for _ in 0..16 {
-        flash.lock().await.write_power_on().await;
-    }
-    flash.lock().await.write_metadata(Instant::now(), 0.0).await;
-    flash.lock().await.write_state(FlightState::Idle).await;
-
-    let mut flight_sm = FlightSM::new();
-
-    let mut max_altitude = 0_f32;
-    let mut cycle_count = 0_u32;
-    loop {
-        Timer::after_millis(20).await; // make this stable 50Hz
-                                       // get measurements
-        let baro_reading = match baro.read_temp_and_pressure().await {
-            Ok(val) => val,
-            Err(_) => {
-                error!("Could not get baro measurement");
-                continue;
-            }
-        };
-
-        let acceleration = match acc.read_acceleration().await {
-            Ok(val) => Vector3::<f32>::new(val[0], val[1], val[2]),
-            Err(_) => {
-                error!("Could not get accel measurement");
-                continue;
-            }
-        };
-        cycle_count += 1;
-
-        let old_state = flight_sm.get_state();
-        flight_sm.update(baro_reading.pressure, acceleration);
-        let new_state = flight_sm.get_state();
-
-        if flight_sm.get_relative_altitude() > max_altitude {
-            max_altitude = flight_sm.get_relative_altitude();
-        }
-
-        let write_every = match flight_sm.get_state() {
-            FlightState::MaybeLaunched => 1,
-            FlightState::Boost => 1,
-            FlightState::Coast => 1,
-            FlightState::Descent => 10,
-            FlightState::Idle => 50,
-        };
-
-        let mut flash = flash.lock().await;
-
-        if cycle_count % write_every == 0 {
-            flash
-                .write_telem(
-                    flight_sm.get_relative_altitude(),
-                    flight_sm.get_vertical_velocity(),
-                    flight_sm.get_vertical_acceleration(),
-                )
-                .await;
-            info!(
-                "telemetry {} {} {}",
-                flight_sm.get_relative_altitude(),
-                flight_sm.get_vertical_velocity(),
-                flight_sm.get_vertical_acceleration()
-            );
-            info!("flash {}", flash.get_index());
-        }
-
-        if cycle_count % (write_every * 10) == 0 {
-            flash.write_metadata(Instant::now(), 3.3).await;
-        }
-
-        #[cfg(feature = "store_all")]
-        if flight_sm.get_state() != FlightState::Idle {
-            flash
-                .write_debug(
-                    acceleration[0],
-                    acceleration[1],
-                    acceleration[2],
-                    baro_reading.pressure,
-                    Instant::now(),
-                )
-                .await;
-        }
-        if old_state != new_state {
-            warn!("state changed {:?}", new_state);
-            flash.write_state(new_state).await;
-        }
-
-        trace!(
-            "debug {:?} {} {} {}",
-            new_state,
-            flight_sm.get_absolute_altitude(),
-            flight_sm.get_vertical_velocity(),
-            flight_sm.get_vertical_acceleration()
-        );
-        trace!(
-            "debug raw {} {} {} {}",
-            baro_reading.pressure,
-            acceleration[0],
-            acceleration[1],
-            acceleration[2]
-        );
-        trace!("debug flash {}", flash.get_index());
-    }
-}
 
 #[cfg(target_os = "none")]
 #[embassy_executor::main]
@@ -216,7 +119,7 @@ async fn main(spawner: Spawner) {
         temperature_enable: true,
     };
     baro.set_power_control(power_control).await.expect("couldn't set power control");
-    let mut acc = lis2dh12::Lis2dh12::new(acc_spi_device).await.expect("couldn't initialize acc");
+    let mut acc = AccelerometerType::new(acc_spi_device).await.expect("couldn't initialize acc");
     acc.set_bdu(true).await.expect("coudln't set bdu");
     acc.enabled_adcs().await.expect("coudln't enable adc");
     acc.enable_temp(true).await.expect("couldn't enable temp");
@@ -230,11 +133,61 @@ async fn main(spawner: Spawner) {
     static FLASH: StaticCell<Mutex<ThreadModeRawMutex, FlashWriter>> = StaticCell::new();
     let flash = FLASH.init(Mutex::new(FlashWriter::new(flash).await.unwrap()));
 
-    spawner.spawn(flight_task(baro, acc, flash)).unwrap();
-    spawner.spawn(usb_handler::usb_task(spawner, usb_driver, flash)).unwrap();
+    static WREN: StaticCell<Mutex<ThreadModeRawMutex, WrenState>> = StaticCell::new();
+    let wren = WrenState {
+        altitude: 0.0,
+        acceleration: 0.0,
+        battery_voltage: 0.0,
+    };
+    let wren = WREN.init(Mutex::new(wren));
+
+    spawner.spawn(flight_task::flight_task(baro, acc, flash, wren)).unwrap();
+    spawner.spawn(usb_handler::usb_task(spawner, usb_driver, flash, wren)).unwrap();
+
+    let mut adc_config = saadc::Config::default();
+    adc_config.oversample = saadc::Oversample::OVER256X;
+    adc_config.resolution = saadc::Resolution::_14BIT;
+    let mut channel_config = saadc::ChannelConfig::single_ended(p.P0_04);
+    channel_config.reference = saadc::Reference::INTERNAL; // 0.6V
+    channel_config.gain = saadc::Gain::GAIN1_3; // 0.6V * 3 = 1.8V
+    channel_config.time = saadc::Time::_40US; // high input resistance in the divider
+    let saadc: saadc::Saadc<'_, 1> = saadc::Saadc::new(p.SAADC, Irqs, adc_config, [channel_config]);
+    saadc.calibrate().await;
+
+    #[embassy_executor::task]
+    async fn adc_task(mut saadc: saadc::Saadc<'static, 1>, wren: &'static Mutex<ThreadModeRawMutex, WrenState>) {
+        loop {
+            let mut adc_buf = [0_i16; 1];
+            saadc.sample(&mut adc_buf).await;
+            let volt = adc_buf[0] as f32 / (powf(2.0, 14.0) - 1.0) * 1.8 * 151.0 / 51.0;
+            {
+                let mut wren = wren.lock().await;
+                wren.battery_voltage = volt;
+            };
+            Timer::after_millis(250).await;
+        }
+    }
+    spawner.spawn(adc_task(saadc, wren)).unwrap();
     loop {
-        led_pin.toggle();
-        Timer::after_millis(500).await;
+        let mut index;
+        let size;
+        {
+            let flash = flash.lock().await;
+            index = flash.get_index();
+            size = flash.get_size();
+        }
+        if index < 1 {
+            index = 1
+        }
+
+        let to_blink = 4 - (((index - 1) as f32 / size as f32) * 4.0) as u32;
+        for _ in 0..to_blink {
+            led_pin.set_high();
+            Timer::after_millis(200).await;
+            led_pin.set_low();
+            Timer::after_millis(200).await;
+        }
+        Timer::after_millis(1000).await;
     }
 }
 
@@ -248,7 +201,15 @@ async fn init_native(spawner: Spawner) {
     static FLASH: StaticCell<Mutex<ThreadModeRawMutex, FlashWriter>> = StaticCell::new();
     let flash = FLASH.init(Mutex::new(FlashWriter::new(flash).await.unwrap()));
 
-    spawner.spawn(flight_task(baro, accel, flash)).unwrap();
+    static WREN: StaticCell<Mutex<ThreadModeRawMutex, WrenState>> = StaticCell::new();
+    let wren = WrenState {
+        altitude: 0.0,
+        acceleration: 0.0,
+        battery_voltage: 0.0,
+    };
+    let wren = WREN.init(Mutex::new(wren));
+
+    spawner.spawn(flight_task::flight_task(baro, accel, flash, wren)).unwrap();
     loop {
         Timer::after_millis(500).await;
     }
