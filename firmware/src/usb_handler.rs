@@ -87,15 +87,19 @@ async fn handle_command<'a>(
     length: usize,
     flash: &'a Mutex<ThreadModeRawMutex, FlashWriter>,
     wren: &'static Mutex<ThreadModeRawMutex, WrenState>,
-) {
+) -> Result<(), EndpointError> {
     let cmd = &buf[0..length];
 
     match cmd {
+        b"wren?" => {
+            class.write_packet("wren!\n".as_bytes()).await?;
+        }
+
         b"read_flash" => {
             let mut str_buf: heapless::String<64> = Default::default();
             let mut flash = flash.lock().await;
-            write!(str_buf, "{{\"length\":{}}}", flash.get_index()).unwrap();
-            class.write_packet(str_buf.as_bytes()).await.unwrap();
+            write!(str_buf, "{{\"length\":{}}}\n", flash.get_index()).unwrap();
+            class.write_packet(str_buf.as_bytes()).await?;
             embassy_time::Timer::after_millis(100).await;
             let mut read: u32 = 0;
             let mut buf = [0_u8; 64];
@@ -103,13 +107,14 @@ async fn handle_command<'a>(
                 let to_read = (flash.get_index() - read).min(buf.len() as u32) as usize;
                 let slice = &mut buf[0..to_read];
                 flash.read(read, slice).await.unwrap();
-                class.write_packet(slice).await.unwrap();
+                class.write_packet(slice).await?;
                 read += to_read as u32;
             }
         }
 
         b"clear_flash" => {
             flash.lock().await.erase().await;
+            class.write_packet("{{\"successful\": true}}\n".as_bytes()).await?;
         }
 
         b"get_status" => {
@@ -132,7 +137,7 @@ async fn handle_command<'a>(
             let mut str_buf: heapless::String<128> = Default::default();
             write!(
                 str_buf,
-                "{{\"used_flash\":{}, \"flash_size\":{}, \"time\":{}, \"volt\":{}, \"altitude\":{},\"acceleration\":{}}}",
+                "{{\"flash_used\":{}, \"flash_size\":{}, \"time\":{}, \"volt\":{}, \"altitude\":{},\"acceleration\":{}}}\n",
                 flash_index,
                 flash_size,
                 Instant::now().as_millis(),
@@ -142,10 +147,10 @@ async fn handle_command<'a>(
             )
             .unwrap();
             if str_buf.as_bytes().len() > 64 {
-                class.write_packet(&str_buf.as_bytes()[0..64]).await.unwrap();
-                class.write_packet(&str_buf.as_bytes()[64..]).await.unwrap();
+                class.write_packet(&str_buf.as_bytes()[0..64]).await?;
+                class.write_packet(&str_buf.as_bytes()[64..]).await?;
             } else {
-                class.write_packet(&str_buf.as_bytes()).await.unwrap();
+                class.write_packet(&str_buf.as_bytes()).await?;
             }
         }
 
@@ -153,6 +158,8 @@ async fn handle_command<'a>(
             info!("invalid command");
         }
     }
+
+    Ok(())
 }
 
 async fn handle_usb_connection<'a>(
@@ -172,7 +179,7 @@ async fn handle_usb_connection<'a>(
                 b'\r' => continue,
                 b'\n' => {
                     info!("handling command");
-                    handle_command(class, &command_buf, command_index, flash, wren).await;
+                    handle_command(class, &command_buf, command_index, flash, wren).await?;
                     command_index = 0
                 }
                 _ => {
