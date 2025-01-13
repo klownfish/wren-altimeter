@@ -25,13 +25,12 @@ pub async fn flight_task(
     for _ in 0..16 {
         flash.lock().await.write_power_on().await;
     }
-    flash.lock().await.write_metadata(Instant::now(), 0.0).await;
-    flash.lock().await.write_state(FlightState::Idle).await;
 
     let mut flight_sm = FlightSM::new();
 
     let mut max_altitude = 0_f32;
     let mut cycle_count = 0_u32;
+    let mut local_voltage = 0.0;
     loop {
         Timer::after_millis(20).await; // make this stable 50Hz
                                        // get measurements
@@ -71,13 +70,14 @@ pub async fn flight_task(
         let mut flash = flash.lock().await;
 
         if cycle_count % write_every == 0 {
-            flash
-                .write_telem(
+            flash.write_time(Instant::now()).await;
+            flash.write_telem(
                     flight_sm.get_relative_altitude(),
                     flight_sm.get_vertical_velocity(),
                     flight_sm.get_vertical_acceleration(),
-                )
-                .await;
+                ).await;
+            flash.write_voltage(local_voltage).await;
+
             info!(
                 "telemetry {} {} {}",
                 flight_sm.get_relative_altitude(),
@@ -85,10 +85,6 @@ pub async fn flight_task(
                 flight_sm.get_vertical_acceleration()
             );
             info!("flash {}", flash.get_index());
-        }
-
-        if cycle_count % (write_every * 10) == 0 {
-            flash.write_metadata(Instant::now(), 3.3).await;
         }
 
         #[cfg(feature = "store_all")]
@@ -111,7 +107,9 @@ pub async fn flight_task(
             let mut wren = wren.lock().await;
             wren.acceleration = flight_sm.get_raw_acceleration();
             wren.altitude = flight_sm.get_absolute_altitude();
+            local_voltage = wren.battery_voltage;
         }
+
         trace!(
             "debug {:?} {} {} {}",
             new_state,

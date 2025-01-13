@@ -21,6 +21,7 @@ enum MessageIds {
     State = 3,
     PowerOn = 4,
     Debug = 5,
+    Time = 6,
 }
 
 impl FlashWriter {
@@ -79,6 +80,14 @@ impl FlashWriter {
         Ok(())
     }
 
+    pub async fn write_time(&mut self, time: Instant) {
+        let mut buf = [0_u8; 5];
+        buf[0] = MessageIds::Time as u8;
+        buf[1..5].copy_from_slice(&(time.as_millis() as u32).to_le_bytes());
+
+        self.write(&buf).await.unwrap();
+    }
+
     pub async fn write_telem(&mut self, altitude: f32, velocity: f32, acceleration: f32) {
         let alt_int: u16 = (altitude * 4.0) as u16;
         let vel_int: u16 = ((velocity + 100.0) * 100.0) as u16;
@@ -97,16 +106,13 @@ impl FlashWriter {
         self.write(&buf).await.unwrap();
     }
 
-    pub async fn write_metadata(&mut self, time: Instant, volt: f32) {
-        let time_int: u32 = time.as_millis() as u32;
+    pub async fn write_voltage(&mut self, volt: f32) {
         let volt_int: u16 = (volt * 1000.0) as u16;
 
-        let time_bytes = time_int.to_le_bytes();
         let volt_bytes = volt_int.to_le_bytes();
-        let mut buf = [0_u8; 7];
+        let mut buf = [0_u8; 3];
         buf[0] = MessageIds::Metadata as u8;
-        buf[1..5].copy_from_slice(&time_bytes);
-        buf[5..7].copy_from_slice(&volt_bytes);
+        buf[1..3].copy_from_slice(&volt_bytes);
         self.write(&buf).await.unwrap();
     }
 
@@ -124,7 +130,7 @@ impl FlashWriter {
     pub async fn write_debug(&mut self, acc_x: f32, acc_y: f32, acc_z: f32, pressure: f64, time: Instant) {
         let mut buf = [0_u8; 25];
         buf[0] = MessageIds::Debug as u8;
-        buf[1..5].copy_from_slice(&(time.as_millis() as u32).to_ne_bytes());
+        buf[1..5].copy_from_slice(&(time.as_millis() as u32).to_le_bytes());
         buf[5..9].copy_from_slice(&acc_x.to_ne_bytes());
         buf[9..13].copy_from_slice(&acc_y.to_ne_bytes());
         buf[13..17].copy_from_slice(&acc_z.to_ne_bytes());

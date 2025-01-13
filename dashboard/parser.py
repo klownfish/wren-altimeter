@@ -1,69 +1,79 @@
 import struct
 from collections import defaultdict
 
-IdMetadata = 1,
-IdTelemetry = 2,
-IdState = 3,
+IdVoltage = 1
+IdTelemetry = 2
+IdState = 3
 IdPowerOn = 4
+IdDebug = 5
+IdTime = 6
 
 class TimeSeries:
-    def __init__(x, y):
+    def __init__(self):
         self.x = []
         self.y = []
 
 class Parser():
-    def __init__():
-        self.coom = 0
-        self.data = {}
+    def __init__(self):
+        self.splits = []
 
-    def open_file(path):
+    def open_file(self, path):
         f = open(path, "rb")
-        buf = f.readall()
+        buf = f.read()
         if path.endswith(".csv"):
-            self.data = self.parse_csv(buf)
+            self.parse_csv(buf)
         else:
-            self.data = self.parse_binary(buf)
+            self.parse_binary(buf)
 
     def open_serial(self, port):
         pass
 
-    def get_status_text(self,):
+    def get_status_text(self):
         pass
 
     def parse_binary(self, buf):
         current_time = 0
         offset_time = 0
-        just_powered_on = False
+        just_powered_on = True # set this to true to not initialize
         last_raw_time = 0
         index = 0
-        self.data["everything"] = defaultdict(lambda: TimeSeries())
+        split_index = 0
+        current_dict = defaultdict(lambda: TimeSeries())
         while True:
+            if index == len(buf):
+                if "boost" in current_dict["state"].y:
+                    self.splits.append(current_dict)
+                break
             id = buf[index]
             index += 1
+            if id == IdPowerOn: # power on
+                if just_powered_on == False:
+                    if "boost" in current_dict["state"].y:
+                        self.splits.append(current_dict)
+                    just_powered_on = True
+                continue
 
-            if id == PowerOn: # power on
-                just_powered_on = True
-
+            just_powered_on = False
             if id == IdTelemetry:
-                current_time += 50
                 (alt_raw, vel_raw, acc_raw) = struct.unpack_from("<HHH", buf, index)
-                index += struct.calcsize("<HHH", buf, index)
+                index += struct.calcsize("<HHH")
                 alt = alt_raw / 4
-                vel = vel_raw / 100
-                acc = acc_raw / 200
-                self.data["everything"]["altitude"].x.append(current_time)
-                self.data["everything"]["altitude"].y.append(alt)
+                vel = vel_raw / 100 - 100
+                acc = acc_raw / 200 - 200
 
-                self.data["everything"]["velocity"].x.append(current_time)
-                self.data["everything"]["velocity"].y.append(vel)
+                current_dict["altitude"].x.append(current_time)
+                current_dict["altitude"].y.append(alt)
 
-                self.data["everything"]["acceleration"].x.append(current_time)
-                self.data["everything"]["acceleration"].y.append(acc)
+                current_dict["velocity"].x.append(current_time)
+                current_dict["velocity"].y.append(vel)
+
+                current_dict["acceleration"].x.append(current_time)
+                current_dict["acceleration"].y.append(acc)
 
 
-            if id == IdState:
-                (state) = struct.unpack_from("<B", buf, index)
-                index += struct.calcsize("<B", buf, index)
+            elif id == IdState:
+                (state,) = struct.unpack_from("<B", buf, index)
+                index += struct.calcsize("<B")
 
                 state_to_name = {
                     0: "idle",
@@ -74,22 +84,28 @@ class Parser():
                 }
 
                 name = state_to_name[state]
-                if name != "maybe_launched":
-                    self.data["everything"]["events"].x.append(current_time)
-                    self.data["everything"]["events"].y.append(name)
+                current_dict["state"].x.append(current_time)
+                current_dict["state"].y.append(name)
 
-            if id == IdMetadata:
-                (raw_time, volt_raw) = struct.unpack_from("<IH", buf, index)
+            elif id == IdVoltage:
+                (volt_raw,) = struct.unpack_from("<H", buf, index)
+                index += struct.calcsize("<H")
                 volt = volt_raw / 1000
+                current_dict["volt"].x.append(current_time)
+                current_dict["volt"].y.append(volt)
 
-                if just_powered_on:
-                    offset_time = current_time
-                    just_powered_on = False
-                    current_time = (raw_time / 1000) + offset_time
-                    self.data["everything"]["events"].x.append(current_time)
-                    # self.data["everything"]["events"].y.append("power_on")
-                else:
-                    current_time = raw_time + offset_time
+            elif id == IdDebug:
+                index += struct.calcsize("<fffdI")
 
-                self.data["everything"]["volt"].x.append(current_time)
-                self.data["everything"]["volt"].y.append(volt)
+            elif id == IdTime:
+                (time,) = struct.unpack_from("<I", buf, index)
+                index += struct.calcsize("<I")
+                current_time = time / 1000.0
+                print(current_time)
+
+            else:
+                print("invalid id", id)
+
+if __name__ == "__main__":
+    parser = Parser()
+    parser.open_file("/tmp/wren_flash.bin")

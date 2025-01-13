@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QCheckBox, QWidget, QComboBox, QLabel, QPushButton, QFrame, QFileDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
+from parser import Parser, TimeSeries
+import time
 
 class PlotWindow(QMainWindow):
     def __init__(self):
@@ -11,44 +13,40 @@ class PlotWindow(QMainWindow):
         self.event_lines = []
         self.setWindowTitle("Interactive Plot with Events")
         self.setGeometry(100, 100, 1000, 600)
+        self.parser = Parser()
 
         # Initialize default data for the plots
-        self.time = np.linspace(0, 10, 100)
-        self.altitude = np.sin(self.time) * 100
-        self.velocity = np.cos(self.time) * 50
-        self.acceleration = np.sin(self.time / 2) * 10
+        self.altitude = TimeSeries()
+        self.velocity = TimeSeries()
+        self.acceleration = TimeSeries()
 
         # Create the figure and primary plot
         self.figure, self.ax_altitude = plt.subplots()
         self.canvas = FigureCanvas(self.figure)
 
         # Initial plot with multiple y-axes
-        self.altitude_line, = self.ax_altitude.plot(self.time, self.altitude, 'b-', label="Altitude")
+        self.altitude_line, = self.ax_altitude.plot(self.altitude.x, self.altitude.y, 'b-', label="Altitude")
         self.ax_altitude.set_ylabel("Altitude (m)", color='b')
 
         # Create a second y-axis for velocity
         self.ax_velocity = self.ax_altitude.twinx()
-        self.velocity_line, = self.ax_velocity.plot(self.time, self.velocity, 'g-', label="Velocity")
+        self.velocity_line, = self.ax_velocity.plot(self.velocity.x, self.velocity.y, 'g-', label="Velocity")
         self.ax_velocity.set_ylabel("Velocity (m/s)", color='g')
 
         # Create a third y-axis for acceleration (shared x-axis)
         self.ax_acceleration = self.ax_altitude.twinx()
         self.ax_acceleration.spines['right'].set_position(('outward', 60))
-        self.acceleration_line, = self.ax_acceleration.plot(self.time, self.acceleration, 'r-', label="Acceleration")
+        self.acceleration_line, = self.ax_acceleration.plot(self.acceleration.x, self.acceleration.y, 'r-', label="Acceleration")
         self.ax_acceleration.set_ylabel("Acceleration (m/s²)", color='r')
 
-        self.ax_altitude.set_title("Altitude, Velocity, and Acceleration with Events")
-
-        # Create event markers
-        self.events = [2, 5, 7]  # Default event times for Source 1
-        self.plot_events()
+        self.ax_altitude.set_title("Altitude, Velocity, and Acceleration")
 
         # Create the left-side control panel
         control_panel = QVBoxLayout()
 
         # Buttons for file and USB operations
         self.open_file_button = QPushButton("Open File")
-        self.open_usb_button = QPushButton("Open USB")  # Renamed
+        self.open_usb_button = QPushButton("Open USB")
         self.open_file_button.clicked.connect(self.open_file_dialog)  # Connect the button to the file dialog
         control_panel.addWidget(self.open_file_button)
         control_panel.addWidget(self.open_usb_button)
@@ -125,11 +123,11 @@ class PlotWindow(QMainWindow):
 
     def open_file_dialog(self):
         """Open a file dialog and select a file."""
-        file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "Text Files (*.txt);;All Files (*)")
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "Flash Files (*.bin)")
         if file_name:
             print(f"File selected: {file_name}")
-            # You can implement logic here to read the selected file
-            # For example, load data for plotting or other actions
+            self.parser.open_file(file_name)
+            self.update_plot_data()
 
     def toggle_altitude(self):
         """Toggle visibility of the altitude line and its axis."""
@@ -167,44 +165,17 @@ class PlotWindow(QMainWindow):
             self.ax_acceleration.yaxis.set_visible(False)
         self.canvas.draw()
 
-    def plot_events(self):
-        """Plot events as vertical lines."""
-        for event in self.events:
-            event_line = self.ax_altitude.axvline(x=event, color='black', linestyle='--', label=f'Event at t={event}s')
-            self.event_lines.append(event_line)
-
     def update_plot_data(self):
         """Updates the plot data based on the selected data source."""
         selected_source = self.data_source_dropdown.currentText()
-
-        if selected_source == "Source 1":
-            self.time = np.linspace(0, 10, 100)
-            self.altitude = np.sin(self.time) * 100
-            self.velocity = np.cos(self.time) * 50
-            self.acceleration = np.sin(self.time / 2) * 10
-            self.events = [2, 5, 7]  # Events for Source 1
-            self.info_label.setText("Time: 1.0 s\nVoltage: 12.5 V\nFlash Memory: 1.0 GB")
-
-        elif selected_source == "Source 2":
-            self.time = np.linspace(0, 20, 200)
-            self.altitude = np.sin(self.time / 2) * 120
-            self.velocity = np.cos(self.time / 2) * 55
-            self.acceleration = np.cos(self.time / 4) * 15
-            self.events = [4, 8, 12]  # Events for Source 2
-            self.info_label.setText("Time: 2.0 s\nVoltage: 13.0 V\nFlash Memory: 0.8 GB")
+        self.altitude = self.parser.splits[0]["altitude"]
+        self.velocity = self.parser.splits[0]["velocity"]
+        self.acceleration = self.parser.splits[0]["acceleration"]
 
         # Update each plot line with the new data
-        self.altitude_line.set_data(self.time, self.altitude)
-        self.velocity_line.set_data(self.time, self.velocity)
-        self.acceleration_line.set_data(self.time, self.acceleration)
-
-        # Clear previous event lines and re-plot them
-        for event_line in self.event_lines:
-            event_line.remove()  # Remove the event lines from the plot
-        self.event_lines.clear()  # Clear the event lines list
-
-        # Plot new events
-        self.plot_events()
+        self.altitude_line.set_data(self.altitude.x, self.altitude.y)
+        self.velocity_line.set_data(self.velocity.x, self.velocity.y)
+        self.acceleration_line.set_data(self.acceleration.x, self.acceleration.y)
 
         # Update axes limits and refresh the canvas
         self.ax_altitude.relim()
@@ -217,6 +188,7 @@ class PlotWindow(QMainWindow):
         self.canvas.draw()
 
 if __name__ == '__main__':
+    parser = Parser()
     app = QApplication(sys.argv)
     window = PlotWindow()
     window.show()
