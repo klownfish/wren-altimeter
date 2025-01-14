@@ -4358,6 +4358,12 @@
 		(uuid "55880732-bbab-4c93-b4c9-d31ad85a3a26")
 	)
 	(junction
+		(at 27.94 34.29)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "624f474d-0a70-4540-9ea4-48a905d1053f")
+	)
+	(junction
 		(at 350.52 50.8)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4510,6 +4516,16 @@
 			(type default)
 		)
 		(uuid "00a4d273-26c2-4000-85e3-a7ca6953df58")
+	)
+	(wire
+		(pts
+			(xy 27.94 40.64) (xy 27.94 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "00bc733b-1d9b-47f3-bffc-1aa2523952db")
 	)
 	(wire
 		(pts
@@ -5530,6 +5546,16 @@
 			(type default)
 		)
 		(uuid "92798d91-38b3-4f90-8225-ff85a18acab7")
+	)
+	(wire
+		(pts
+			(xy 27.94 34.29) (xy 27.94 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "930f721e-fec9-4a1a-abcb-1e8f03236065")
 	)
 	(wire
 		(pts
@@ -7620,6 +7646,85 @@
 	)
 	(symbol
 		(lib_id "Device:C_Small")
+		(at 27.94 38.1 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "09263c65-e53f-4ee5-b8c9-4d99a64ccd45")
+		(property "Reference" "C19"
+			(at 30.48 36.8362 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "33u"
+			(at 30.48 39.3762 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric"
+			(at 27.94 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 27.94 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 27.94 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C342635"
+			(at 27.94 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "29eb6d69-2839-42ec-9bb8-d6efde2a0ec9")
+		)
+		(pin "2"
+			(uuid "04a91eb4-0673-4fdd-b14b-360d70469fde")
+		)
+		(instances
+			(project ""
+				(path "/8dfd5e49-82a4-495d-a71d-8d9575b6f72b"
+					(reference "C19")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C_Small")
 		(at 262.89 46.99 180)
 		(unit 1)
 		(exclude_from_sim no)
@@ -8115,7 +8220,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C5830663"
+		(property "LCSC" "C187794"
 			(at 250.19 114.3 0)
 			(effects
 				(font
@@ -10148,6 +10253,72 @@
 	)
 	(symbol
 		(lib_id "power:Earth")
+		(at 27.94 41.91 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "5c5b698e-733b-4d1e-a2c4-a3eed551c4bd")
+		(property "Reference" "#PWR038"
+			(at 27.94 48.26 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "Earth"
+			(at 27.94 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 27.94 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 27.94 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"Earth\""
+			(at 27.94 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7c342cbb-2c5a-4f2b-9206-d1d411478392")
+		)
+		(instances
+			(project ""
+				(path "/8dfd5e49-82a4-495d-a71d-8d9575b6f72b"
+					(reference "#PWR038")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:Earth")
 		(at 316.23 187.96 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -10566,7 +10737,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C131223"
+		(property "LCSC" "C917189"
 			(at 212.09 160.02 0)
 			(effects
 				(font
