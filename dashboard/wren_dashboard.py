@@ -7,7 +7,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 from wren_manager import WrenManager, TimeSeries
 import time
-
+import csv
 
 class WrenDashboard(QMainWindow):
     def __init__(self):
@@ -16,6 +16,7 @@ class WrenDashboard(QMainWindow):
         self.setWindowTitle("Wren Dashboard")
         self.setGeometry(100, 100, 1000, 600)
         self.wren = WrenManager()
+        self.plot_data = {}
 
         # Initialize default data for the plots
         self.altitude = TimeSeries()
@@ -103,6 +104,11 @@ class WrenDashboard(QMainWindow):
         # Group toggle buttons and data source dropdown horizontally and center them
         checkbox_layout = QHBoxLayout()  # Keep as horizontal layout
         checkbox_layout.setSpacing(10)  # Reduce spacing between buttons
+
+        # Add "Save Flight to CSV" button
+        # self.save_flight_csv_button = QPushButton("Save flight to CSV")
+        # self.save_flight_csv_button.clicked.connect(self.save_flight_to_csv)  # Connect the button to its handler
+        # checkbox_layout.addWidget(self.save_flight_csv_button)
 
         # Data source dropdown (leftmost in the group)
         self.data_source_dropdown = QComboBox()
@@ -193,7 +199,7 @@ class WrenDashboard(QMainWindow):
             status = "USB connected\n"
             status += f"time: {self.wren.time:.1f}\n"
             status += f"battery: {self.wren.battery_percent:.0f}%\n"
-            status += f"memory used: {self.wren.flash_used:.0f}%\n"
+            status += f"memory used: {self.wren.flash_used * 100:.0f}%\n"
             status += f"battery volt: {self.wren.battery_voltage:.2f}\n"
             status += f"acceleration: {self.wren.acceleration:.2f}\n"
             status += f"altitude: {self.wren.altitude:.1f}\n"
@@ -238,6 +244,34 @@ class WrenDashboard(QMainWindow):
             self.ax_acceleration.yaxis.set_visible(False)
         self.canvas.draw()
 
+    #way too inefficient
+    def save_flight_to_csv(self):
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Flight To File", "", "CSV Files (*.csv)")
+        if not filename:
+            return
+        f = open(filename, "w")
+        headings = []
+        for k in self.plot_data.keys():
+            f.write(k + "_x;")
+            f.write(k + "_y;")
+        f.write("\n")
+        i = 0
+        while True:
+            all_empty = True
+            line = ""
+            for k in self.plot_data.keys():
+                v = self.plot_data[k]
+                if len(v.x) > i:
+                    line += f"{v.x};{v.y};"
+                    all_empty = False
+                else:
+                    line += ";;"
+            i += 1
+            if all_empty == False:
+                f.write(line + "\n")
+            else:
+                break
+
     def dropdown_handler(self):
         """Handles changes in the dropdown selection and updates the plot with the corresponding split."""
         selected_item = self.data_source_dropdown.currentText()
@@ -254,6 +288,7 @@ class WrenDashboard(QMainWindow):
 
 
     def update_plot_data(self, data):
+        self.plot_data = data
         """Updates the plot data based on the selected data source."""
         self.altitude = data["altitude"]
         self.velocity = data["velocity"]

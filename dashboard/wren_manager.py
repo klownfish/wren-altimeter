@@ -69,7 +69,7 @@ class WrenManager():
         for port in ports:
             try:
                 # Open serial connection
-                ser = serial.Serial(port.device, timeout=1)  # Timeout of 1 second
+                ser = serial.Serial(port.device, timeout=20)  # Timeout of 1 second
                 ser.read_all()
                 ser.write(b"wren?\n")  # Send query to device
 
@@ -107,6 +107,7 @@ class WrenManager():
         binary_length = parsed["length"]
         print(binary_length)
         buf = self.ser.read(binary_length)
+        print(len(buf))
         if len(buf) == binary_length:
             return buf
         else:
@@ -134,6 +135,7 @@ class WrenManager():
                 if just_powered_on == False:
                     if "boost" in current_dict["state"].y:
                         self.splits.append(current_dict)
+                    current_dict = defaultdict(lambda: TimeSeries())
                     just_powered_on = True
                 continue
 
