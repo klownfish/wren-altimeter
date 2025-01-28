@@ -67,7 +67,10 @@ bind_interrupts!(struct Irqs {
 #[cfg(target_os = "none")]
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
-    let nrf_config = embassy_nrf::config::Config::default();
+    let mut nrf_config = embassy_nrf::config::Config::default();
+    nrf_config.hfclk_source = embassy_nrf::config::HfclkSource::ExternalXtal;
+    nrf_config.dcdc.reg0_voltage = Some(embassy_nrf::config::Reg0Voltage::_2V4); //flash memory is not rated for 1v8 apparently
+    nrf_config.dcdc.reg1 = false;
     let p = embassy_nrf::init(nrf_config);
 
     info!("Enabling ext hfosc...");
@@ -76,45 +79,6 @@ async fn main(spawner: Spawner) {
 
     Timer::after_millis(100).await;
 
-    // for i in 0..10 {
-    //     Timer::after_millis(1000).await;
-    //     warn!("starting in {}", 9 - i);
-    // }
-
-    async fn set_regulator_voltage() {
-        let target = 2;
-        unsafe {
-            let nvmc_base = 0x4001E000;
-            let p_config: *mut u32 = (nvmc_base + 0x504) as *mut u32;
-
-            let uicr_base = 0x10001000;
-            let p_uicr_regout0: *mut u32 = (uicr_base + 0x304) as *mut u32;
-
-            let p_erase_uicr: *mut u32 = (nvmc_base + 0x514) as *mut u32;
-
-            core::ptr::write_volatile(p_config, 0 as u32); // enable flash read
-            let before = core::ptr::read_volatile(p_uicr_regout0);
-
-            if before | 0b111 != target {
-                core::ptr::write_volatile(p_config, 2 as u32); // enable flash erase
-                core::ptr::write_volatile(p_erase_uicr, 1 as u32); // erase uicr
-                let middle = core::ptr::read_volatile(p_uicr_regout0);
-                core::ptr::write_volatile(p_config, 1 as u32); // enable flash writing
-                core::ptr::write_volatile(p_uicr_regout0, target as u32); // set to target voltage
-                core::ptr::write_volatile(p_config, 0 as u32); // disable uicr writing
-                let after = core::ptr::read_volatile(p_uicr_regout0);
-                info!("Set regout0 before: {} middle: {} after: {}", before, middle, after);
-                Timer::after_millis(500).await;
-
-            } else {
-                info!("reg0 already set to {}", target);
-                cortex_m::peripheral::SCB::sys_reset();
-            }
-        }
-    }
-
-    // 1v8 is NOT enough for the flash memory apparently, set to 2v4
-    set_regulator_voltage().await;
     let mut led_pin = Output::new(p.P0_09, Level::High, OutputDrive::HighDrive);
 
     let mut pwr_pin = Output::new(p.P0_01, Level::High, OutputDrive::HighDrive);

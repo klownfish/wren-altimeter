@@ -92,6 +92,7 @@ pub async fn flight_task(
 
         #[cfg(feature = "store_all")]
         if flight_sm.get_state() != FlightState::Idle {
+            info!("wrote debug");
             flash
                 .write_debug(
                     acceleration[0],
