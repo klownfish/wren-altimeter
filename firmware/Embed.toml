@@ -1,0 +1,14 @@
+[default.general]
+chip = "nRF52833_xxAA"
+
+[default.rtt]
+enabled = true
+channels = [
+    { up = 0, name = "Defmt Output", up_mode = "NoBlockTrim", format = "Defmt" },
+]
+
+[attach.flashing]
+enabled = false
+
+[attach.reset]
+enabled = false

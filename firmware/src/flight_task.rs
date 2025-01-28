@@ -3,7 +3,7 @@
 use defmt::{debug, error, info, trace, warn};
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::mutex::Mutex;
-use embassy_time::{Instant, Timer};
+use embassy_time::{Duration, Instant, Ticker};
 #[allow(unused_imports)]
 #[cfg(not(target_os = "none"))]
 use log::{debug, error, info, trace, warn};
@@ -22,8 +22,11 @@ pub async fn flight_task(
     wren: &'static Mutex<ThreadModeRawMutex, WrenState>,
 ) -> ! {
     // write multiple times to guarante a proper sync if the previous state is corrupt
-    for _ in 0..16 {
-        flash.lock().await.write_power_on().await;
+    {
+        let mut flash = flash.lock().await;
+        for _ in 0..16 {
+            flash.write_power_on().await;
+        }
     }
 
     let mut flight_sm = FlightSM::new();
@@ -31,9 +34,10 @@ pub async fn flight_task(
     let mut max_altitude = 0_f32;
     let mut cycle_count = 0_u32;
     let mut local_voltage = 0.0;
+    let mut ticker = Ticker::every(Duration::from_hz(50));
+
     loop {
-        Timer::after_millis(20).await; // make this stable 50Hz
-                                       // get measurements
+        ticker.next().await;
         let baro_reading = match baro.read_temp_and_pressure().await {
             Ok(val) => val,
             Err(_) => {
@@ -68,7 +72,6 @@ pub async fn flight_task(
         };
 
         let mut flash = flash.lock().await;
-
         if cycle_count % write_every == 0 {
             flash.write_time(Instant::now()).await;
             flash.write_telem(

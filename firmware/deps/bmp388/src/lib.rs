@@ -32,7 +32,8 @@ use config::{InterruptConfig, OversamplingConfig, Register};
 pub mod config;
 
 /// The expected value of the ChipId register
-pub const CHIP_ID: u8 = 0x50;
+pub const CHIP_ID_390: u8 = 0x60;
+pub const CHIP_ID_388: u8 = 0x50;
 
 pub struct Bmp388<Bus> {
     bus: Bus,
@@ -174,7 +175,7 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
             pressure_calibration: PressureCalibration::default(),
         };
         let id = chip.id().await?;
-        if id == CHIP_ID {
+        if id == CHIP_ID_390 || id == CHIP_ID_388 {
             chip.reset().await?;
             delay.delay_ms(10).await;
             chip.reset().await?;
