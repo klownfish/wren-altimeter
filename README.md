@@ -25,9 +25,16 @@ A 12mm x 34mm 4 layer PCB, designed to only use components from JLCPCB's stock. 
 ## Firmware
 The onboard firmware is being developed using Rust with the Embassy framework.
 
-To flash and build run
-`cargo run`
 
+### Flashing
+First you need to flash the bootloader. CD into the `firmware/bootloader/` directory and then run
+
+`cargo run --release`
+
+After the bootloader is flashed, CD into the `firmware/` directory and run the same command. As long as the bootloader isn't changed you don't need to flash it again.
+
+
+### Testing
 To run the native test build with mock drivers run
 
 `cargo run --target x86_64-unknown-linux-gnu` (or any arch with std)
