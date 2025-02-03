@@ -1,0 +1,15 @@
+[target.'cfg(all(target_arch = "arm", target_os = "none"))']
+runner = "probe-rs run --chip nrf52833_xxAA"
+
+rustflags = [
+  # Code-size optimizations.
+  #"-Z", "trap-unreachable=no",
+  #"-C", "no-vectorize-loops",
+  "-C", "force-frame-pointers=yes",
+]
+
+[build]
+target = "thumbv7em-none-eabi"
+
+[env]
+DEFMT_LOG = "trace"

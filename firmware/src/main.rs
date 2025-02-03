@@ -16,7 +16,7 @@ use embassy_nrf::peripherals::SPI2;
 #[cfg(target_os = "none")]
 use embassy_nrf::saadc;
 #[cfg(target_os = "none")]
-use embassy_nrf::{bind_interrupts, peripherals, spim, usb};
+use embassy_nrf::{bind_interrupts, peripherals, spim, usb, wdt};
 #[cfg(target_os = "none")]
 use embassy_time::Delay;
 #[cfg(target_os = "none")]
@@ -72,6 +72,26 @@ async fn main(spawner: Spawner) {
     nrf_config.dcdc.reg0_voltage = Some(embassy_nrf::config::Reg0Voltage::_2V4); //flash memory is not rated for 1v8 apparently
     nrf_config.dcdc.reg1 = false;
     let p = embassy_nrf::init(nrf_config);
+
+    let wdt_config = wdt::Config::try_new(&p.WDT).unwrap();
+    let (_wdt, [wdt_handle]) = match wdt::Watchdog::try_new(p.WDT, wdt_config) {
+        Ok(x) => x,
+        Err(_) => {
+            // Watchdog already active with the wrong number of handles, waiting for it to timeout...
+            loop {
+                cortex_m::asm::wfe();
+            }
+        }
+    };
+
+    #[embassy_executor::task]
+    async fn wdt_task(mut wdt: wdt::WatchdogHandle) {
+        loop {
+            wdt.pet();
+            Timer::after_millis(5000).await;
+        }
+    }
+    spawner.spawn(wdt_task(wdt_handle)).unwrap();
 
     info!("Enabling ext hfosc...");
     pac::CLOCK.tasks_hfclkstart().write_value(1);
