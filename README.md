@@ -22,23 +22,67 @@ A 12mm x 34mm 4 layer PCB, designed to only use components from JLCPCB's stock. 
 ![](docs/assembled.jpg)
 
 
-## Firmware
-The onboard firmware is being developed using Rust with the Embassy framework.
+# Firmware
 
+The onboard firmware is developed in Rust using the [Embassy](https://embassy.dev/) framework.
 
-### Flashing
-First you need to flash the bootloader. CD into the `firmware/bootloader/` directory and then run
+## Flashing the Firmware
 
-`cargo run --release`
+### 1. Flash the Bootloader
+Before flashing the firmware, you must first flash the bootloader. Navigate to the `firmware/bootloader/` directory and run:
 
-After the bootloader is flashed, CD into the `firmware/` directory and run the same command. As long as the bootloader isn't changed you don't need to flash it again.
+```bash
+cargo run --release
+```
 
+### 2. Flash the Firmware
+Once the bootloader is installed, navigate to the `firmware/` directory and run the same command:
 
-### Testing
-To run the native test build with mock drivers run
+```bash
+cargo run --release
+```
 
-`cargo run --target x86_64-unknown-linux-gnu` (or any arch with std)
+> **Note:** You only need to flash the bootloader once unless you modify it.
 
-## Software
-![](docs/dashboard.png)
-To fetch data and manage the altimeter use the dashboard. Run `python main.py`
+## Updating via USB
+Once the bootloader is flashed, you can update the firmware directly over USB.
+
+### 1. Build the Firmware Binary
+Generate a binary file suitable for flashing:
+
+```bash
+cargo objcopy --release -- -O binary firmware.bin
+```
+
+This will create `firmware.bin` in the current directory.
+
+### 2. Upload the Firmware
+1. **Connect the board** to a USB port.
+2. **Run the firmware updater script:**
+
+   ```bash
+   python firmware_updater.py ../firmware/firmware.bin
+   ```
+
+3. **Power cycle the board** – The updater intercepts the boot process to load the new firmware.
+
+## Testing
+To run a native test build with mock drivers, use:
+
+```bash
+cargo run --target x86_64-unknown-linux-gnu
+```
+
+*(Or any other architecture that supports the Rust standard library.)*
+
+---
+
+# Software
+
+![Dashboard Interface](docs/dashboard.png)
+
+To fetch data and manage the altimeter, use the dashboard:
+
+```bash
+python dashboard/main.py
+```

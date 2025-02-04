@@ -8,7 +8,6 @@ use defmt::{debug, error, info, trace, warn};
 use dummy_pin::DummyPin;
 #[cfg(target_os = "none")]
 use embassy_embedded_hal::shared_bus::asynch::spi::SpiDevice;
-use embassy_executor::Spawner;
 #[cfg(target_os = "none")]
 use embassy_nrf::gpio::{Level, Output, OutputDrive};
 #[cfg(target_os = "none")]
@@ -19,6 +18,8 @@ use embassy_nrf::saadc;
 use embassy_nrf::{bind_interrupts, peripherals, spim, usb, wdt};
 #[cfg(target_os = "none")]
 use embassy_time::Delay;
+#[cfg(target_os = "none")]
+use embassy_time::with_timeout;
 #[cfg(target_os = "none")]
 use embassy_nrf::pac;
 #[cfg(target_os = "none")]
@@ -32,6 +33,7 @@ use log::{debug, error, info, trace, warn};
 #[cfg(not(target_os = "none"))]
 use env_logger;
 
+use embassy_executor::Spawner;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::mutex::Mutex;
 use embassy_time::Timer;
@@ -73,8 +75,10 @@ async fn main(spawner: Spawner) {
     nrf_config.dcdc.reg1 = false;
     let p = embassy_nrf::init(nrf_config);
 
+    info!("Starting Wren {}", env!("CARGO_PKG_VERSION"));
+
     let wdt_config = wdt::Config::try_new(&p.WDT).unwrap();
-    let (_wdt, [wdt_handle]) = match wdt::Watchdog::try_new(p.WDT, wdt_config) {
+    let (_wdt, [mut wdt_handle]) = match wdt::Watchdog::try_new(p.WDT, wdt_config) {
         Ok(x) => x,
         Err(_) => {
             // Watchdog already active with the wrong number of handles, waiting for it to timeout...
@@ -84,19 +88,10 @@ async fn main(spawner: Spawner) {
         }
     };
 
-    #[embassy_executor::task]
-    async fn wdt_task(mut wdt: wdt::WatchdogHandle) {
-        loop {
-            wdt.pet();
-            Timer::after_millis(5000).await;
-        }
-    }
-    spawner.spawn(wdt_task(wdt_handle)).unwrap();
 
     info!("Enabling ext hfosc...");
     pac::CLOCK.tasks_hfclkstart().write_value(1);
     while pac::CLOCK.events_hfclkstarted().read() != 1 {}
-
     Timer::after_millis(100).await;
 
     let mut led_pin = Output::new(p.P0_09, Level::High, OutputDrive::HighDrive);
@@ -197,13 +192,16 @@ async fn main(spawner: Spawner) {
         }
     }
     spawner.spawn(adc_task(saadc, wren)).unwrap();
+
+    let mut index = flash.lock().await.get_index();
+    let mut size = flash.lock().await.get_size();
     loop {
-        let mut index;
-        let size;
-        {
-            let flash = flash.lock().await;
-            index = flash.get_index();
-            size = flash.get_size();
+        match with_timeout(embassy_time::Duration::from_millis(100), flash.lock()).await {
+            Ok(flash) => {
+                index = flash.get_index();
+                size = flash.get_size();
+            },
+            Err(_) => {}
         }
         if index < 1 {
             index = 1
@@ -217,6 +215,7 @@ async fn main(spawner: Spawner) {
             Timer::after_millis(200).await;
         }
         Timer::after_millis(1000).await;
+        wdt_handle.pet();
     }
 }
 

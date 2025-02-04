@@ -69,7 +69,7 @@ class WrenManager():
         for port in ports:
             try:
                 # Open serial connection
-                ser = serial.Serial(port.device, timeout=20)  # Timeout of 1 second
+                ser = serial.Serial(port.device, timeout=30)
                 ser.read_all()
                 ser.write(b"wren?\n")  # Send query to device
 
