@@ -13,6 +13,17 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
+#[cfg(feature = "wren")]
+fn linker_data() -> &'static [u8] {
+    return include_bytes!("memory-nrf52833.x");
+}
+
+#[cfg(feature = "wren-bt")]
+fn linker_data() -> &'static [u8] {
+    return include_bytes!("memory-nrf52832.x");
+}
+
+
 fn main() {
     let target = env::var("TARGET").unwrap_or_default();
 
@@ -22,7 +33,7 @@ fn main() {
         let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());
         File::create(out.join("memory.x"))
             .unwrap()
-            .write_all(include_bytes!("memory.x"))
+            .write_all(linker_data())
             .unwrap();
         println!("cargo:rustc-link-search={}", out.display());
 

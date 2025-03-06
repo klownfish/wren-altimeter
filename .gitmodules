@@ -1,0 +1,3 @@
+[submodule "firmware/deps/trouble"]
+	path = firmware/deps/trouble
+	url = https://github.com/klownfish/trouble
