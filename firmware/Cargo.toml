@@ -4,11 +4,23 @@ name = "wren"
 version = "1.0.0"
 
 [features]
+default = ["wren-bt"]
 store_all = []
+wren = [
+    "embassy-nrf/nrf52833",
+    "nrf-sdc/nrf52833",
+    "nrf-mpsl/nrf52833"
+]
+wren-bt = [
+    "embassy-nrf/nrf52832",
+    "nrf-sdc/nrf52832",
+    "nrf-mpsl/nrf52832"
+]
+native = []
 
 # embedded dependencies
 [target.'cfg(target_os = "none")'.dependencies]
-embassy-nrf = { version = "0.3.1", features = ["defmt", "nrf52833", "time-driver-rtc1", "gpiote", "nfc-pins-as-gpio", "time", "unstable-pac"] }
+embassy-nrf = { version = "0.3.1", features = ["defmt", "time-driver-rtc1", "gpiote", "nfc-pins-as-gpio", "time", "unstable-pac"] }
 embassy-executor = { version = "0.7.0", features = ["task-arena-size-32768", "arch-cortex-m", "executor-thread", "executor-interrupt", "defmt"] }
 embassy-sync = { version = "0.6.1", features = ["defmt"] }
 embassy-time = { version = "0.4.0", features = ["defmt", "defmt-timestamp-uptime"] }
@@ -25,6 +37,10 @@ w25q32jv = { path = "./deps/w25q32jv", features = ["async"] }
 embedded-io = { version = "0.6.0", features = ["defmt-03"]  }
 embedded-io-async = { version = "0.6.1", features = ["defmt-03"] }
 
+nrf-sdc = { version = "0.1.0", default-features = false, features = ["defmt", "peripheral", "central"] }
+nrf-mpsl = { version = "0.1.0", default-features = false, features = ["defmt", "critical-section-impl"] }
+trouble-host = { git = "https://github.com/embassy-rs/trouble", rev = "54cd0465ca497495b5890d896fc1f048f0a0f1ee", features = ["defmt", "derive", "scan"] }
+bt-hci = { version = "0.2", default-features = false, features = ["defmt"] }
 
 # native dependencies
 [target.'cfg(not(target_os = "none"))'.dependencies]
@@ -93,3 +109,5 @@ embassy-sync = { git = "https://github.com/embassy-rs/embassy", rev = "8c5e34604
 embassy-embedded-hal = { git = "https://github.com/embassy-rs/embassy", rev = "8c5e34604c8b7c934259ba991433ae8e9f1ca61d" }
 embassy-nrf = { git = "https://github.com/embassy-rs/embassy", rev = "8c5e34604c8b7c934259ba991433ae8e9f1ca61d" }
 embassy-time-driver = { git = "https://github.com/embassy-rs/embassy", rev = "8c5e34604c8b7c934259ba991433ae8e9f1ca61d" }
+nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "551a95436e999b4290b4a33383aa3d6747b63dd9" }
+nrf-mpsl = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "551a95436e999b4290b4a33383aa3d6747b63dd9" }

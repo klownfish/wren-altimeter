@@ -5,7 +5,6 @@ Wren is an altimeter small enough to fit in a standard 18mm model rocket. It is 
 
 ![](docs/scale.jpg)
 
-
 ## Hardware
 A 12mm x 34mm 4 layer PCB, designed to only use components from JLCPCB's stock. Single sided assembly with only a debug connector and battery pads on the back.
 
@@ -86,3 +85,6 @@ To fetch data and manage the altimeter, use the dashboard:
 ```bash
 python dashboard/main.py
 ```
+
+### WIP bluetooth version
+![](docs/bluetooth.jpg)

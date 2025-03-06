@@ -15,7 +15,10 @@ use embassy_nrf::peripherals::SPI2;
 #[cfg(target_os = "none")]
 use embassy_nrf::saadc;
 #[cfg(target_os = "none")]
-use embassy_nrf::{bind_interrupts, peripherals, spim, usb, wdt};
+use embassy_nrf::{bind_interrupts, peripherals, spim, wdt};
+#[cfg(target_os = "none")]
+#[cfg(feature = "wren")]
+use embassy_nrf::usb;
 #[cfg(target_os = "none")]
 use embassy_time::Delay;
 #[cfg(target_os = "none")]
@@ -26,6 +29,7 @@ use embassy_nrf::pac;
 use libm::powf;
 #[cfg(target_os = "none")]
 use {defmt_rtt as _, panic_probe as _};
+
 
 #[allow(unused_imports)]
 #[cfg(not(target_os = "none"))]
@@ -49,6 +53,7 @@ mod kalman;
 mod platform;
 
 #[cfg(target_os = "none")]
+#[cfg(feature = "wren")]
 mod usb_handler;
 
 #[allow(unused)]
@@ -58,17 +63,63 @@ struct WrenState {
     altitude: f32,
 }
 
+#[cfg(all(feature = "wren", feature = "wren-bt"))]
+compile_error!("Features 'wren' and 'wren-bt' are mutually exclusive!");
+
 #[cfg(target_os = "none")]
 bind_interrupts!(struct Irqs {
+    #[cfg(feature = "wren")]
     USBD => usb::InterruptHandler<peripherals::USBD>;
-    SPI2 => spim::InterruptHandler<SPI2>;
+    #[cfg(feature = "wren")]
     CLOCK_POWER => usb::vbus_detect::InterruptHandler;
+
+    SPI2 => spim::InterruptHandler<SPI2>;
     SAADC => saadc::InterruptHandler;
 });
 
-#[cfg(target_os = "none")]
-#[embassy_executor::main]
-async fn main(spawner: Spawner) {
+#[cfg(all(target_os = "none", feature = "wren-bt"))]
+#[cfg_attr(all(target_os = "none", feature = "wren-bt"), embassy_executor::main)]
+async fn main_FAGOOT(spawner: Spawner) {
+    let mut nrf_config = embassy_nrf::config::Config::default();
+    nrf_config.hfclk_source = embassy_nrf::config::HfclkSource::ExternalXtal;
+    let p = embassy_nrf::init(nrf_config);
+
+    info!("Starting Wren-bt {}", env!("CARGO_PKG_VERSION"));
+    info!("Enabling ext hfosc...");
+    pac::CLOCK.tasks_hfclkstart().write_value(1);
+    while pac::CLOCK.events_hfclkstarted().read() != 1 {}
+    Timer::after_millis(100).await;
+
+    let mut pwr_pin = Output::new(p.P0_07, Level::High, OutputDrive::HighDrive);
+    let baro_cs = Output::new(p.P0_25, Level::High, OutputDrive::HighDrive);
+    let acc_cs = Output::new(p.P0_10, Level::High, OutputDrive::HighDrive);
+    let flash_cs = Output::new(p.P0_26, Level::High, OutputDrive::HighDrive);
+
+    pwr_pin.set_high();
+    Timer::after_millis(500).await;
+
+    let mut spi_config = spim::Config::default();
+    spi_config.frequency = spim::Frequency::M1;
+
+    static SPI_BUS: StaticCell<Mutex<ThreadModeRawMutex, spim::Spim<peripherals::SPI2>>> = StaticCell::new();
+    let spi = spim::Spim::new(p.SPI2, Irqs, p.P0_05, p.P0_04, p.P0_03, spi_config);
+
+    let spi_bus = Mutex::new(spi);
+    let spi_bus = SPI_BUS.init(spi_bus);
+
+    let baro_spi_device: SpiDevice<'_, ThreadModeRawMutex, spim::Spim<'_, SPI2>, Output<'_>> =
+        SpiDevice::new(spi_bus, baro_cs);
+    let acc_spi_device = SpiDevice::new(spi_bus, acc_cs);
+    let flash_spi_device = SpiDevice::new(spi_bus, flash_cs);
+
+    loop {
+        Timer::after_millis(100).await;
+    }
+}
+
+#[cfg(all(target_os = "none", feature = "wren"))]
+#[cfg_attr(all(target_os = "none", feature = "wren"), embassy_executor::main)]
+async fn main_RETADSAD(spawner: Spawner) {
     let mut nrf_config = embassy_nrf::config::Config::default();
     nrf_config.hfclk_source = embassy_nrf::config::HfclkSource::ExternalXtal;
     nrf_config.dcdc.reg0_voltage = Some(embassy_nrf::config::Reg0Voltage::_2V4); //flash memory is not rated for 1v8 apparently
@@ -95,8 +146,11 @@ async fn main(spawner: Spawner) {
     Timer::after_millis(100).await;
 
     let mut led_pin = Output::new(p.P0_09, Level::High, OutputDrive::HighDrive);
-
     let mut pwr_pin = Output::new(p.P0_01, Level::High, OutputDrive::HighDrive);
+    let baro_cs = Output::new(p.P0_30, Level::High, OutputDrive::HighDrive);
+    let acc_cs = Output::new(p.P0_03, Level::High, OutputDrive::HighDrive);
+    let flash_cs = Output::new(p.P0_10, Level::High, OutputDrive::HighDrive);
+
     pwr_pin.set_high();
     led_pin.set_high();
     Timer::after_millis(500).await;
@@ -109,10 +163,6 @@ async fn main(spawner: Spawner) {
 
     let spi_bus = Mutex::new(spi);
     let spi_bus = SPI_BUS.init(spi_bus);
-
-    let baro_cs = Output::new(p.P0_30, Level::High, OutputDrive::HighDrive);
-    let acc_cs = Output::new(p.P0_03, Level::High, OutputDrive::HighDrive);
-    let flash_cs = Output::new(p.P0_10, Level::High, OutputDrive::HighDrive);
 
     let baro_spi_device: SpiDevice<'_, ThreadModeRawMutex, spim::Spim<'_, SPI2>, Output<'_>> =
         SpiDevice::new(spi_bus, baro_cs);
@@ -143,6 +193,7 @@ async fn main(spawner: Spawner) {
         temperature_enable: true,
     };
     baro.set_power_control(power_control).await.expect("couldn't set power control");
+
     let mut acc = AccelerometerType::new(acc_spi_device).await.expect("couldn't initialize acc");
     acc.set_bdu(true).await.expect("coudln't set bdu");
     acc.enabled_adcs().await.expect("coudln't enable adc");
@@ -166,7 +217,10 @@ async fn main(spawner: Spawner) {
     let wren = WREN.init(Mutex::new(wren));
 
     spawner.spawn(flight_task::flight_task(baro, acc, flash, wren)).unwrap();
+
     spawner.spawn(usb_handler::usb_task(spawner, usb_driver, flash, wren)).unwrap();
+
+
 
     let mut adc_config = saadc::Config::default();
     adc_config.oversample = saadc::Oversample::OVER256X;
@@ -236,7 +290,6 @@ async fn init_native(spawner: Spawner) {
         battery_voltage: 0.0,
     };
     let wren = WREN.init(Mutex::new(wren));
-
     spawner.spawn(flight_task::flight_task(baro, accel, flash, wren)).unwrap();
     loop {
         Timer::after_millis(500).await;
@@ -246,7 +299,6 @@ async fn init_native(spawner: Spawner) {
 #[cfg(not(target_os = "none"))]
 fn main() {
     env_logger::init();
-    error!("haha");
     use embassy_executor::Executor;
     static EXECUTOR: StaticCell<Executor> = StaticCell::new();
     let executor = EXECUTOR.init(Executor::new());
