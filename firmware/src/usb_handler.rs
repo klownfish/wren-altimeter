@@ -137,7 +137,7 @@ async fn handle_command<'a>(
             let mut str_buf: heapless::String<128> = Default::default();
             write!(
                 str_buf,
-                "{{\"flash_used\":{}, \"flash_size\":{}, \"time\":{}, \"volt\":{}, \"altitude\":{},\"acceleration\":{}}}\n",
+                "{{\"flash_used\":{}, \"flash_size\":{}, \"time\":{}, \"volt\":{}, \"altitude\":{},\"acceleration\":{},\"hw_ok\":true}}\n",
                 flash_index,
                 flash_size,
                 Instant::now().as_millis(),

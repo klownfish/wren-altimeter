@@ -100,7 +100,6 @@ lto = true
 opt-level = "z"
 incremental = true
 
-
 [patch.crates-io]
 embassy-time = { git = "https://github.com/embassy-rs/embassy", rev = "8c5e34604c8b7c934259ba991433ae8e9f1ca61d" }
 embassy-executor = { git = "https://github.com/embassy-rs/embassy", rev = "8c5e34604c8b7c934259ba991433ae8e9f1ca61d" }

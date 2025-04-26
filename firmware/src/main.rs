@@ -30,6 +30,15 @@ use libm::powf;
 #[cfg(target_os = "none")]
 use {defmt_rtt as _, panic_probe as _};
 
+#[cfg(all(target_os = "none", feature = "wren-bt"))]
+use embassy_nrf::peripherals::RNG;
+#[cfg(all(target_os = "none", feature = "wren-bt"))]
+use embassy_nrf::rng;
+
+#[cfg(all(target_os = "none", feature = "wren-bt"))]
+use nrf_sdc::mpsl::MultiprotocolServiceLayer;
+#[cfg(all(target_os = "none", feature = "wren-bt"))]
+use nrf_sdc::{self as sdc, mpsl};
 
 #[allow(unused_imports)]
 #[cfg(not(target_os = "none"))]
@@ -52,9 +61,13 @@ mod flight_task;
 mod kalman;
 mod platform;
 
-#[cfg(target_os = "none")]
-#[cfg(feature = "wren")]
+#[cfg(all(target_os = "none", feature = "wren"))]
 mod usb_handler;
+
+#[cfg(all(target_os = "none", feature = "wren-bt"))]
+mod bluetooth;
+#[cfg(all(target_os = "none", feature = "wren-bt"))]
+mod nus;
 
 #[allow(unused)]
 struct WrenState {
@@ -75,20 +88,39 @@ bind_interrupts!(struct Irqs {
 
     SPI2 => spim::InterruptHandler<SPI2>;
     SAADC => saadc::InterruptHandler;
+
+    #[cfg(feature = "wren-bt")]
+    RNG => rng::InterruptHandler<RNG>;
+    #[cfg(feature = "wren-bt")]
+    EGU0_SWI0 => nrf_sdc::mpsl::LowPrioInterruptHandler;
+    #[cfg(feature = "wren-bt")]
+    CLOCK_POWER => nrf_sdc::mpsl::ClockInterruptHandler;
+    #[cfg(feature = "wren-bt")]
+    RADIO => nrf_sdc::mpsl::HighPrioInterruptHandler;
+    #[cfg(feature = "wren-bt")]
+    TIMER0 => nrf_sdc::mpsl::HighPrioInterruptHandler;
+    #[cfg(feature = "wren-bt")]
+    RTC0 => nrf_sdc::mpsl::HighPrioInterruptHandler;
 });
+
+#[cfg(all(target_os = "none", feature = "wren-bt"))]
+async fn init_bluetooth() {
+
+}
 
 #[cfg(all(target_os = "none", feature = "wren-bt"))]
 #[cfg_attr(all(target_os = "none", feature = "wren-bt"), embassy_executor::main)]
 async fn main(spawner: Spawner) {
-    let mut nrf_config = embassy_nrf::config::Config::default();
-    // nrf_config.hfclk_source = embassy_nrf::config::HfclkSource::ExternalXtal;
-    let p = embassy_nrf::init(nrf_config);
-
     info!("Starting Wren-bt {}", env!("CARGO_PKG_VERSION"));
     info!("Enabling ext hfosc...");
     pac::CLOCK.tasks_hfclkstart().write_value(1);
     while pac::CLOCK.events_hfclkstarted().read() != 1 {}
     Timer::after_millis(100).await;
+
+    let mut nrf_config = embassy_nrf::config::Config::default();
+    nrf_config.hfclk_source = embassy_nrf::config::HfclkSource::ExternalXtal;
+    let p = embassy_nrf::init(nrf_config);
+
 
     // let mut pwr_pin = Output::new(p.P0_07, Level::High, OutputDrive::HighDrive);
     // let mut led_pin = Output::new(p.P0_07, Level::High, OutputDrive::HighDrive);
@@ -136,6 +168,56 @@ async fn main(spawner: Spawner) {
         temperature_enable: true,
     };
     baro.set_power_control(power_control).await.expect("couldn't set power control");
+
+
+
+    #[embassy_executor::task]
+    async fn mpsl_task(mpsl: &'static MultiprotocolServiceLayer<'static>) -> ! {
+        mpsl.run().await
+    }
+
+    fn build_sdc<'d, const N: usize>(
+        p: nrf_sdc::Peripherals<'d>,
+        rng: &'d mut rng::Rng<RNG>,
+        mpsl: &'d MultiprotocolServiceLayer,
+        mem: &'d mut sdc::Mem<N>,
+    ) -> Result<nrf_sdc::SoftdeviceController<'d>, nrf_sdc::Error> {
+        // How many outgoing L2CAP buffers per link
+        const L2CAP_TXQ: u8 = 3;
+        // How many incoming L2CAP buffers per link
+        const L2CAP_RXQ: u8 = 3;
+        // Size of L2CAP packets
+        const L2CAP_MTU: usize = 27;
+
+        sdc::Builder::new()?
+            .support_adv()?
+            .support_peripheral()?
+            .peripheral_count(1)?
+            .buffer_cfg(L2CAP_MTU as u8, L2CAP_MTU as u8, L2CAP_TXQ, L2CAP_RXQ)?
+            .build(p, rng, mpsl, mem)
+    }
+
+    let mpsl_p = mpsl::Peripherals::new(p.RTC0, p.TIMER0, p.TEMP, p.PPI_CH19, p.PPI_CH30, p.PPI_CH31);
+    let lfclk_cfg = mpsl::raw::mpsl_clock_lfclk_cfg_t {
+        source: mpsl::raw::MPSL_CLOCK_LF_SRC_RC as u8,
+        rc_ctiv: mpsl::raw::MPSL_RECOMMENDED_RC_CTIV as u8,
+        rc_temp_ctiv: mpsl::raw::MPSL_RECOMMENDED_RC_TEMP_CTIV as u8,
+        accuracy_ppm: mpsl::raw::MPSL_DEFAULT_CLOCK_ACCURACY_PPM as u16,
+        skip_wait_lfclk_started: mpsl::raw::MPSL_DEFAULT_SKIP_WAIT_LFCLK_STARTED != 0,
+    };
+    static MPSL: StaticCell<MultiprotocolServiceLayer> = StaticCell::new();
+    let mpsl = MPSL.init(mpsl::MultiprotocolServiceLayer::new(mpsl_p, Irqs, lfclk_cfg).unwrap());
+    spawner.must_spawn(mpsl_task(&*mpsl));
+
+    let sdc_p = sdc::Peripherals::new(
+        p.PPI_CH17, p.PPI_CH18, p.PPI_CH20, p.PPI_CH21, p.PPI_CH22, p.PPI_CH23, p.PPI_CH24, p.PPI_CH25, p.PPI_CH26,
+        p.PPI_CH27, p.PPI_CH28, p.PPI_CH29,
+    );
+
+    let mut rng = rng::Rng::new(p.RNG, Irqs);
+
+    let mut sdc_mem = sdc::Mem::<3312>::new();
+    let sdc = build_sdc(sdc_p, &mut rng, mpsl, &mut sdc_mem).unwrap();
 
     loop {
         info!("boing");
@@ -245,8 +327,6 @@ async fn main(spawner: Spawner) {
     spawner.spawn(flight_task::flight_task(baro, acc, flash, wren)).unwrap();
 
     spawner.spawn(usb_handler::usb_task(spawner, usb_driver, flash, wren)).unwrap();
-
-
 
     let mut adc_config = saadc::Config::default();
     adc_config.oversample = saadc::Oversample::OVER256X;

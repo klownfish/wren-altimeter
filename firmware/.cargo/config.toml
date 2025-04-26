@@ -5,6 +5,7 @@ runner = 'probe-rs run --chip nRF52833_xxAA'
 
 [build]
 target = "thumbv7em-none-eabihf"
+rustflags = ["-C", "lto=thin"]
 
 [env]
 DEFMT_LOG = "trace"

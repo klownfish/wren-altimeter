@@ -174,13 +174,19 @@ impl<Spi: embedded_hal_async::spi::SpiDevice> Bmp388<Spi>  {
             temperature_calibration: TemperatureCalibration::default(),
             pressure_calibration: PressureCalibration::default(),
         };
+    info!("jjinitialising baro");
         let id = chip.id().await?;
         if id == CHIP_ID_390 || id == CHIP_ID_388 {
-            chip.reset().await?;
+    info!("initialising nbaro");
+    chip.reset().await?;
+    info!("initialising mbaro");
             delay.delay_ms(10).await;
+    info!("initialising lbaro");
             chip.reset().await?;
             // without this the first few bytes of calib data could be incorrectly zero
+    info!("initialising sbaro");
             delay.delay_ms(10).await;
+    info!("initialising ssbaro");
             chip.read_calibration().await?;
             info!("Bmp388 initialized");
             Ok(chip)
